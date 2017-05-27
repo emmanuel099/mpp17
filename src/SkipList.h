@@ -5,22 +5,24 @@
 #include <limits>
 #include <random>
 
-template <typename T, std::uint16_t MaximumHeight> class SkipList
+template <typename T, std::uint16_t MaximumHeight>
+class SkipList
 {
   public:
     static_assert(std::is_integral<T>::value, "T must be an integral type");
 
-    using value_type      = T;
-    using reference       = value_type&;
+    using value_type = T;
+    using reference = value_type&;
     using const_reference = const value_type&;
-    using pointer         = value_type*;
-    using const_pointer   = const value_type*;
+    using pointer = value_type*;
+    using const_pointer = const value_type*;
     using difference_type = std::ptrdiff_t;
-    using size_type       = std::size_t;
+    using size_type = std::size_t;
 
   private:
     struct Node {
-        Node(const_reference value) : value(value)
+        Node(const_reference value)
+            : value(value)
         {
         }
 
@@ -30,13 +32,14 @@ template <typename T, std::uint16_t MaximumHeight> class SkipList
 
   public:
     SkipList()
-        : m_head(new Node(std::numeric_limits<value_type>::min())),
-          m_sentinel(new Node(std::numeric_limits<value_type>::max())),
-          m_height(0), m_size(0)
+        : m_head(new Node(std::numeric_limits<value_type>::min()))
+        , m_sentinel(new Node(std::numeric_limits<value_type>::max()))
+        , m_height(0)
+        , m_size(0)
     {
         // connect head with sentinel
         for (std::uint16_t level = 0; level <= MaximumHeight; ++level) {
-            m_head->next[level]     = m_sentinel;
+            m_head->next[level] = m_sentinel;
             m_sentinel->next[level] = nullptr;
         }
     }
@@ -83,7 +86,7 @@ template <typename T, std::uint16_t MaximumHeight> class SkipList
         // postdecessors
         auto* newNode = new Node(value);
         for (std::uint16_t level = 0; level <= newHeight; ++level) {
-            newNode->next[level]             = predecessors[level]->next[level];
+            newNode->next[level] = predecessors[level]->next[level];
             predecessors[level]->next[level] = newNode;
         }
 

@@ -6,7 +6,6 @@ Language: Cpp
 AllowShortFunctionsOnASingleLine: None
 AllowShortBlocksOnASingleLine: false
 PointerAlignment: Left
-AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: false
 AlignTrailingComments: true
 AllowShortCaseLabelsOnASingleLine: false
@@ -14,4 +13,7 @@ AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 BreakBeforeBraces: Linux
 BreakBeforeTernaryOperators: true
+AlwaysBreakTemplateDeclarations: true
+BreakConstructorInitializersBeforeComma: true
+UseTab: Never
 ---
