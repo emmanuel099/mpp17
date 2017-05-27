@@ -2,6 +2,7 @@ include_directories (${SkipList_SOURCE_DIR}/src)
 
 add_executable(skiplist_tests
     SkipListTest.cpp
+    ConcurrentSkipListTest.cpp
 )
 
 target_link_libraries(skiplist_tests
