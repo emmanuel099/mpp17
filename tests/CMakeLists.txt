@@ -1,5 +1,7 @@
+include_directories (${SkipList_SOURCE_DIR}/src)
+
 add_executable(skiplist_tests
-    ExampleTest.cpp
+    SkipListTest.cpp
 )
 
 target_link_libraries(skiplist_tests
@@ -14,7 +16,7 @@ target_compile_options(skiplist_tests
         -Wno-deprecated
 )
 
-set_property(TARGET skiplist_tests PROPERTY CXX_STANDARD 11)
+set_property(TARGET skiplist_tests PROPERTY CXX_STANDARD 14)
 set_property(TARGET skiplist_tests PROPERTY CXX_CLANG_TIDY ${CLANG_TIDY_PATH};-checks=*)
 
 add_test(AllTests skiplist_tests)
