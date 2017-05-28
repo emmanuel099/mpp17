@@ -25,6 +25,11 @@ class SkipList
         Node(const_reference value)
             : value(value)
         {
+#ifndef NDEBUG
+            // if stack trace contains coffee, then there went something
+            // somewhere terrible wrong
+            next.fill(reinterpret_cast<Node*>(0xC0FFE));
+#endif
         }
 
         value_type value;
@@ -38,11 +43,8 @@ class SkipList
         , m_height(0)
         , m_size(0)
     {
-        // connect head with sentinel
-        for (std::uint16_t level = 0; level < MaximumHeight; ++level) {
-            m_head->next[level] = m_sentinel;
-            m_sentinel->next[level] = nullptr;
-        }
+        m_head->next.fill(m_sentinel); // connect head with sentinel
+        m_sentinel->next.fill(nullptr);
     }
 
     ~SkipList()
