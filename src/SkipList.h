@@ -10,6 +10,7 @@ class SkipList
 {
   public:
     static_assert(std::is_integral<T>::value, "T must be an integral type");
+    static_assert(MaximumHeight > 0, "Maximum height must be greater than 0");
 
     using value_type = T;
     using reference = value_type&;
@@ -27,7 +28,7 @@ class SkipList
         }
 
         value_type value;
-        std::array<Node*, MaximumHeight + 1> next;
+        std::array<Node*, MaximumHeight> next;
     };
 
   public:
@@ -38,7 +39,7 @@ class SkipList
         , m_size(0)
     {
         // connect head with sentinel
-        for (std::uint16_t level = 0; level <= MaximumHeight; ++level) {
+        for (std::uint16_t level = 0; level < MaximumHeight; ++level) {
             m_head->next[level] = m_sentinel;
             m_sentinel->next[level] = nullptr;
         }
@@ -65,7 +66,7 @@ class SkipList
 
     bool insert(const_reference value)
     {
-        std::array<Node*, MaximumHeight + 1> predecessors;
+        std::array<Node*, MaximumHeight> predecessors;
         auto* current = searchNodeAndRememberPredecessors(value, predecessors);
         if (current->value == value) { // already in list
             return false;
@@ -97,7 +98,7 @@ class SkipList
 
     bool remove(const_reference value)
     {
-        std::array<Node*, MaximumHeight + 1> predecessors;
+        std::array<Node*, MaximumHeight> predecessors;
         auto* current = searchNodeAndRememberPredecessors(value, predecessors);
         if (current->value != value) { // not in list
             return false;
@@ -156,7 +157,7 @@ class SkipList
   private:
     Node* searchNodeAndRememberPredecessors(
         const_reference value,
-        std::array<Node*, MaximumHeight + 1>& predecessors) const
+        std::array<Node*, MaximumHeight>& predecessors) const
     {
         auto* current = m_head;
         for (std::int32_t level = m_height; level >= 0; --level) {
@@ -181,11 +182,12 @@ class SkipList
         };
 
         std::uint16_t height = 0;
-        while (not flipCoinAndCheckIfHead() and (height < MaximumHeight)) {
+        while (not flipCoinAndCheckIfHead() and
+               (height < (MaximumHeight - 1))) {
             ++height;
         }
 
-        assert(height <= MaximumHeight);
+        assert(height < MaximumHeight);
         return height;
     }
 
