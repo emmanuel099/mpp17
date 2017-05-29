@@ -101,15 +101,21 @@ TEST_F(SkipListTest, InsertingMultipleElementsShouldWork)
     EXPECT_TRUE(list->contains(42));
 }
 
-TEST_F(SkipListTest, InsertingAHugeAmountOfElementsShouldWork)
+TEST_F(SkipListTest, InsertingElementsAfterClearShouldWork)
 {
-    // WHEN
-    for (int i = 0; i < 1000000; i++) {
+    // PREPARE
+    for (int i = 0; i < 3; i++) {
         list->insert(i);
+    }
+    list->clear();
+
+    // WHEN
+    for (int i = 0; i < 3; i++) {
+        EXPECT_TRUE(list->insert(i));
     }
 
     // THEN
-    EXPECT_EQ(1000000, list->size());
+    EXPECT_EQ(3, list->size());
 }
 
 TEST_F(SkipListTest, RemovingExistingElementShouldWork)

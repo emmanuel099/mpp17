@@ -8,6 +8,7 @@ add_executable(skiplist_tests
 target_link_libraries(skiplist_tests
     GTest::GTest
     GTest::Main
+    Threads::Threads
 )
 
 target_compile_options(skiplist_tests

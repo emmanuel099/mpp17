@@ -22,29 +22,35 @@ class SkipList
 
   private:
     struct Node {
-        Node(const_reference value)
+        Node(const_reference value, std::uint16_t height)
             : value(value)
+            , height(height)
         {
 #ifndef NDEBUG
             // if stack trace contains coffee, then there went something
             // somewhere terrible wrong
-            next.fill(reinterpret_cast<Node*>(0xC0FFE));
+            next.fill(reinterpret_cast<Node*>(0xC0FFEE));
 #endif
         }
 
-        value_type value;
+        const value_type value;
         std::array<Node*, MaximumHeight> next;
+        const std::uint16_t height;
     };
 
   public:
     SkipList()
-        : m_head(new Node(std::numeric_limits<value_type>::min()))
-        , m_sentinel(new Node(std::numeric_limits<value_type>::max()))
+        : m_head(
+              new Node(std::numeric_limits<value_type>::min(), MaximumHeight))
+        , m_sentinel(
+              new Node(std::numeric_limits<value_type>::max(), MaximumHeight))
         , m_height(0)
         , m_size(0)
     {
         m_head->next.fill(m_sentinel); // connect head with sentinel
         m_sentinel->next.fill(nullptr);
+
+        checkConsistency();
     }
 
     ~SkipList()
@@ -87,13 +93,15 @@ class SkipList
 
         // add a new node between predecessors and the predecessors's
         // postdecessors
-        auto* newNode = new Node(value);
+        auto* newNode = new Node(value, newHeight);
         for (std::uint16_t level = 0; level <= newHeight; ++level) {
             newNode->next[level] = predecessors[level]->next[level];
             predecessors[level]->next[level] = newNode;
         }
 
         ++m_size;
+
+        checkConsistency();
 
         return true;
     }
@@ -106,7 +114,8 @@ class SkipList
             return false;
         }
 
-        for (std::uint16_t level = 0; level <= m_height; ++level) {
+        const auto nodeHeight = current->height;
+        for (std::uint16_t level = 0; level <= nodeHeight; ++level) {
             predecessors[level]->next[level] = current->next[level];
         }
         delete current;
@@ -123,6 +132,8 @@ class SkipList
         }
 
         --m_size;
+
+        checkConsistency();
 
         return true;
     }
@@ -148,12 +159,16 @@ class SkipList
             delete current;
             current = next;
         }
-        m_size = 0;
 
         // set all changed next pointers of head node back to sentinel node
         for (std::uint16_t level = 0; level <= m_height; ++level) {
             m_head->next[level] = m_sentinel;
         }
+
+        m_size = 0;
+        m_height = 0;
+
+        checkConsistency();
     }
 
   private:
@@ -191,6 +206,39 @@ class SkipList
 
         assert(height < MaximumHeight);
         return height;
+    }
+
+    void checkConsistency() const
+    {
+#ifndef NDEBUG
+        // the next pointers are filled with coffee (see Node ctor)
+        // a correct implementation should never perform any operations on a
+        // next pointer which is equal to coffee
+        const auto* coffee = reinterpret_cast<Node*>(0xC0FFEE);
+
+        // check all non-sentinel nodes
+        for (auto* current = m_head; current != m_sentinel;
+             current = current->next[0]) {
+            const auto nodeHeight = current->height;
+
+            // non-coffee pointers up to node.height
+            for (std::int16_t level = 1; level <= nodeHeight; level++) {
+                assert(current->next[level] != nullptr);
+                assert(current->next[level] != coffee);
+            }
+
+            // only coffee pointers above node.height
+            for (std::int16_t level = nodeHeight + 1; level < MaximumHeight;
+                 level++) {
+                assert(current->next[level] == coffee);
+            }
+        }
+
+        // sentinel node should only contain nullptrs
+        for (std::int16_t level = 0; level < MaximumHeight; level++) {
+            assert(m_sentinel->next[level] == nullptr);
+        }
+#endif
     }
 
   private:

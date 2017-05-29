@@ -21,8 +21,8 @@ class ConcurrentSkipListTest : public ::testing::Test
 TEST_F(ConcurrentSkipListTest, InsertingMultipleElementsInParallelShouldWork)
 {
     // WHEN
-    const int numberOfThreads = 100;
-    const int elementsPerThread = 2000;
+    const int numberOfThreads = 50;
+    const int elementsPerThread = 200;
 
     std::vector<std::thread> threads;
     for (int i = 0; i < numberOfThreads; i++) {
