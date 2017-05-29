@@ -1,28 +1,12 @@
 #include <gtest/gtest.h>
-#include <memory>
 
-#include "SkipList.h"
-
-class SkipListTest : public ::testing::Test
-{
-  protected:
-    void SetUp() override
-    {
-        list = std::make_unique<SkipList<int, 16>>();
-    }
-
-    // virtual void TearDown() {}
-
-    std::unique_ptr<SkipList<int, 16>> list;
-};
-
-TEST_F(SkipListTest, ShouldBeEmptyAfterInitialization)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, ShouldBeEmptyAfterInitialization)
 {
     EXPECT_TRUE(list->empty());
     EXPECT_EQ(0, list->size());
 }
 
-TEST_F(SkipListTest, ShouldNotBeEmptyAfterInsert)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, ShouldNotBeEmptyAfterInsert)
 {
     // WHEN
     list->insert(42);
@@ -32,7 +16,8 @@ TEST_F(SkipListTest, ShouldNotBeEmptyAfterInsert)
     EXPECT_EQ(1, list->size());
 }
 
-TEST_F(SkipListTest, ShouldBeEmptyAfterRemovingLastElementInList)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL,
+       ShouldBeEmptyAfterRemovingLastElementInList)
 {
     // PREPARE
     list->insert(42);
@@ -45,7 +30,7 @@ TEST_F(SkipListTest, ShouldBeEmptyAfterRemovingLastElementInList)
     EXPECT_EQ(0, list->size());
 }
 
-TEST_F(SkipListTest, ShouldBeEmptyAfterClear)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, ShouldBeEmptyAfterClear)
 {
     // PREPARE
     list->insert(21);
@@ -59,7 +44,7 @@ TEST_F(SkipListTest, ShouldBeEmptyAfterClear)
     EXPECT_EQ(0, list->size());
 }
 
-TEST_F(SkipListTest, InsertingNonExistingElementShouldWork)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, InsertingNonExistingElementShouldWork)
 {
     // WHEN
     EXPECT_FALSE(list->contains(12));
@@ -68,7 +53,7 @@ TEST_F(SkipListTest, InsertingNonExistingElementShouldWork)
     EXPECT_TRUE(list->insert(12));
 }
 
-TEST_F(SkipListTest, InsertingExistingElementShouldFail)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, InsertingExistingElementShouldFail)
 {
     // WHEN
     list->insert(12);
@@ -78,7 +63,7 @@ TEST_F(SkipListTest, InsertingExistingElementShouldFail)
     EXPECT_FALSE(list->insert(12));
 }
 
-TEST_F(SkipListTest, ShouldFindInsertedElement)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, ShouldFindInsertedElement)
 {
     // WHEN
     list->insert(42);
@@ -87,7 +72,7 @@ TEST_F(SkipListTest, ShouldFindInsertedElement)
     EXPECT_TRUE(list->contains(42));
 }
 
-TEST_F(SkipListTest, InsertingMultipleElementsShouldWork)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, InsertingMultipleElementsShouldWork)
 {
     // WHEN
     list->insert(12);
@@ -101,7 +86,7 @@ TEST_F(SkipListTest, InsertingMultipleElementsShouldWork)
     EXPECT_TRUE(list->contains(42));
 }
 
-TEST_F(SkipListTest, InsertingElementsAfterClearShouldWork)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, InsertingElementsAfterClearShouldWork)
 {
     // PREPARE
     for (int i = 0; i < 3; i++) {
@@ -118,7 +103,7 @@ TEST_F(SkipListTest, InsertingElementsAfterClearShouldWork)
     EXPECT_EQ(3, list->size());
 }
 
-TEST_F(SkipListTest, RemovingExistingElementShouldWork)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, RemovingExistingElementShouldWork)
 {
     // WHEN
     list->insert(12);
@@ -129,7 +114,7 @@ TEST_F(SkipListTest, RemovingExistingElementShouldWork)
     EXPECT_FALSE(list->contains(12));
 }
 
-TEST_F(SkipListTest, RemovingNonExistingElementShouldFail)
+TEST_F(ABSTRACT_SKIP_LIST_TEST_IMPL, RemovingNonExistingElementShouldFail)
 {
     // WHEN
     EXPECT_FALSE(list->contains(12));
