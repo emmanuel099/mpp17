@@ -131,6 +131,10 @@ std::size_t SkipListStatistics::numberOfInserts() const
 
 double SkipListStatistics::averageNumberOfRetriesDuringInsert() const
 {
+    if (m_numberOfInsertions == 0) {
+        return 0.0;
+    }
+
     return static_cast<double>(m_numberOfInsertionRetries) /
            m_numberOfInsertions;
 }
@@ -140,6 +144,16 @@ std::size_t SkipListStatistics::maximumNumberOfRetriesDuringInsert() const
     return m_maxRetriesDuringInsert;
 }
 
+double SkipListStatistics::percentageFailedInserts() const
+{
+    if (m_numberOfInsertions == 0) {
+        return 0.0;
+    }
+
+    return static_cast<double>(m_numberOfFailedInsertions) /
+           m_numberOfInsertions;
+}
+
 std::size_t SkipListStatistics::numberOfDeletions() const
 {
     return m_numberOfDeletions;
@@ -147,12 +161,25 @@ std::size_t SkipListStatistics::numberOfDeletions() const
 
 double SkipListStatistics::averageNumberOfRetriesDuringDeletion() const
 {
+    if (m_numberOfDeletions == 0) {
+        return 0.0;
+    }
+
     return static_cast<double>(m_numberOfDeletionRetries) / m_numberOfDeletions;
 }
 
 std::size_t SkipListStatistics::maximumNumberOfRetriesDuringDeletion() const
 {
     return m_maxRetriesDuringDeletion;
+}
+
+double SkipListStatistics::percentageFailedDeletions() const
+{
+    if (m_numberOfDeletions == 0) {
+        return 0.0;
+    }
+
+    return static_cast<double>(m_numberOfFailedDeletions) / m_numberOfDeletions;
 }
 
 std::size_t SkipListStatistics::numberOfLookups() const
@@ -162,6 +189,10 @@ std::size_t SkipListStatistics::numberOfLookups() const
 
 double SkipListStatistics::averageNumberOfRetriesDuringLookup() const
 {
+    if (m_numberOfLookups == 0) {
+        return 0.0;
+    }
+
     return static_cast<double>(m_numberOfLookupRetries) / m_numberOfLookups;
 }
 

@@ -30,10 +30,12 @@ class SkipListStatistics
     std::size_t numberOfInserts() const;
     double averageNumberOfRetriesDuringInsert() const;
     std::size_t maximumNumberOfRetriesDuringInsert() const;
+    double percentageFailedInserts() const;
 
     std::size_t numberOfDeletions() const;
     double averageNumberOfRetriesDuringDeletion() const;
     std::size_t maximumNumberOfRetriesDuringDeletion() const;
+    double percentageFailedDeletions() const;
 
     std::size_t numberOfLookups() const;
     double averageNumberOfRetriesDuringLookup() const;
