@@ -6,6 +6,7 @@
 #include <random>
 
 #include "SkipList.h"
+#include "SkipListStatistics.h"
 
 template <typename T, std::uint16_t MaximumHeight>
 class SequentialSkipList final : public SkipList<T>
@@ -75,9 +76,16 @@ class SequentialSkipList final : public SkipList<T>
 
     bool insert(const_reference value) override
     {
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().insertionStart();
+#endif
+
         std::array<Node*, MaximumHeight> predecessors;
         auto* current = searchNodeAndRememberPredecessors(value, predecessors);
         if (current->value == value) { // already in list
+#ifdef COLLECT_STATISTICS
+            SkipListStatistics::threadLocalInstance().insertionFailure();
+#endif
             return false;
         }
 
@@ -104,14 +112,25 @@ class SequentialSkipList final : public SkipList<T>
 
         checkConsistency();
 
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().insertionSuccess();
+#endif
+
         return true;
     }
 
     bool remove(const_reference value) override
     {
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().deletionStart();
+#endif
+
         std::array<Node*, MaximumHeight> predecessors;
         auto* current = searchNodeAndRememberPredecessors(value, predecessors);
         if (current->value != value) { // not in list
+#ifdef COLLECT_STATISTICS
+            SkipListStatistics::threadLocalInstance().deletionFailure();
+#endif
             return false;
         }
 
@@ -136,11 +155,19 @@ class SequentialSkipList final : public SkipList<T>
 
         checkConsistency();
 
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().deletionSuccess();
+#endif
+
         return true;
     }
 
     bool contains(const_reference value) override
     {
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().lookupStart();
+#endif
+
         auto* current = m_head;
         for (std::int32_t level = m_height; level >= 0; --level) {
             while (current->next[level]->value < value) {
@@ -148,6 +175,10 @@ class SequentialSkipList final : public SkipList<T>
             }
         }
         current = current->next[0];
+
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().lookupDone();
+#endif
 
         return current->value == value;
     }
