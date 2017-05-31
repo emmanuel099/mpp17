@@ -298,7 +298,7 @@ class LazySkipList final : public SkipList<T>
     static std::uint16_t randomHeight()
     {
         std::random_device randomDevice;
-        std::mt19937 generator(randomDevice());
+        static thread_local std::mt19937 generator(randomDevice());
         std::bernoulli_distribution distribution(0.5);
         const auto flipCoinAndCheckIfHead = [&] {
             return distribution(generator) == true;
