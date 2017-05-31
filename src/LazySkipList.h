@@ -8,6 +8,7 @@
 #include <random>
 
 #include "SkipList.h"
+#include "SkipListStatistics.h"
 
 template <typename T, std::uint16_t MaximumHeight>
 class LazySkipList final : public SkipList<T>
@@ -74,6 +75,10 @@ class LazySkipList final : public SkipList<T>
 
     bool insert(const_reference value) override
     {
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().insertionStart();
+#endif
+        
         const auto newHeight = randomHeight();
         std::array<std::shared_ptr<Node>, MaximumHeight> predecessors;
         std::array<std::shared_ptr<Node>, MaximumHeight> successors;
@@ -85,8 +90,14 @@ class LazySkipList final : public SkipList<T>
                 if (!foundNode->marked) {
                     while (!foundNode->fullyLinked) {
                     } // wait until found node is completely inserted
+#ifdef COLLECT_STATISTICS
+                    SkipListStatistics::threadLocalInstance().insertionFailure();
+#endif
                     return false;
                 }
+#ifdef COLLECT_STATISTICS
+                SkipListStatistics::threadLocalInstance().insertionRetry();
+#endif
                 continue; // retry until found node is removed
             }
 
@@ -109,6 +120,9 @@ class LazySkipList final : public SkipList<T>
                      ++level) {
                     predecessors[level]->mutex.unlock();
                 }
+#ifdef COLLECT_STATISTICS
+                SkipListStatistics::threadLocalInstance().insertionRetry();
+#endif
                 continue;
             }
 
@@ -127,12 +141,19 @@ class LazySkipList final : public SkipList<T>
             for (std::uint16_t level = 0; level <= maxLockedLevel; ++level) {
                 predecessors[level]->mutex.unlock();
             }
+            
+#ifdef COLLECT_STATISTICS
+            SkipListStatistics::threadLocalInstance().insertionSuccess();
+#endif
             return true;
         }
     }
 
     bool remove(const_reference value) override
     {
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().deletionStart();
+#endif
         bool retryInProgress = false;
         std::array<std::shared_ptr<Node>, MaximumHeight> predecessors;
         std::array<std::shared_ptr<Node>, MaximumHeight> successors;
@@ -140,6 +161,9 @@ class LazySkipList final : public SkipList<T>
         while (true) {
             auto foundLevel = find(value, predecessors, successors);
             if (foundLevel == -1) { // node not found
+#ifdef COLLECT_STATISTICS
+            SkipListStatistics::threadLocalInstance().deletionFailure();
+#endif
                 return false;
             }
 
@@ -150,6 +174,9 @@ class LazySkipList final : public SkipList<T>
                     node->mutex.lock();
                     if (node->marked) {
                         node->mutex.unlock();
+#ifdef COLLECT_STATISTICS
+                        SkipListStatistics::threadLocalInstance().deletionFailure();
+#endif
                         return false;
                     }
                     node->marked = true; // remove linearization point
@@ -174,6 +201,9 @@ class LazySkipList final : public SkipList<T>
                          ++level) {
                         predecessors[level]->mutex.unlock();
                     }
+#ifdef COLLECT_STATISTICS
+                    SkipListStatistics::threadLocalInstance().deletionRetry();
+#endif
                     continue;
                 }
 
@@ -188,8 +218,14 @@ class LazySkipList final : public SkipList<T>
                      ++level) {
                     predecessors[level]->mutex.unlock();
                 }
+#ifdef COLLECT_STATISTICS
+                SkipListStatistics::threadLocalInstance().deletionSuccess();
+#endif
                 return true;
             } else { // node virtually not in list
+#ifdef COLLECT_STATISTICS
+                SkipListStatistics::threadLocalInstance().deletionFailure();
+#endif
                 return false;
             }
         }
@@ -197,10 +233,16 @@ class LazySkipList final : public SkipList<T>
 
     bool contains(const_reference value) override
     {
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().lookupStart();
+#endif
         std::array<std::shared_ptr<Node>, MaximumHeight> predecessors;
         std::array<std::shared_ptr<Node>, MaximumHeight> successors;
         auto onLevel = find(value, predecessors, successors);
 
+#ifdef COLLECT_STATISTICS
+        SkipListStatistics::threadLocalInstance().lookupDone();
+#endif
         return onLevel != -1 && successors[onLevel]->fullyLinked &&
                !successors[onLevel]->marked;
     }
