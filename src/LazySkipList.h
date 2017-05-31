@@ -52,7 +52,6 @@ class LazySkipList final : public SkipList<T>
                                         MaximumHeight))
         , m_sentinel(std::make_shared<Node>(
               std::numeric_limits<value_type>::max(), MaximumHeight))
-        , m_height(MaximumHeight - 1)
         , m_size(0)
     {
         m_head->next.fill(m_sentinel); // connect head with sentinel
@@ -273,21 +272,20 @@ class LazySkipList final : public SkipList<T>
          std::array<std::shared_ptr<Node>, MaximumHeight>& predecessors,
          std::array<std::shared_ptr<Node>, MaximumHeight>& successors) const
     {
-        predecessors.fill(m_head);
-        successors.fill(m_sentinel);
-
         std::int32_t foundLevel = -1;
-        auto current = m_head;
-        for (std::int32_t level = m_height; level >= 0; --level) {
-            while (current->next[level]->value < value) {
-                current = current->next[level];
+        auto pred = m_head;
+        for (std::int32_t level = (MaximumHeight - 1); level >= 0; --level) {
+            auto curr = pred->next[level];
+            while (curr->value < value) {
+                pred = curr;
+                curr = pred->next[level];
             }
 
-            if (foundLevel == -1 && current->next[level]->value == value) {
+            if (foundLevel == -1 && curr->value == value) {
                 foundLevel = level;
             }
-            predecessors[level] = current;
-            successors[level] = current->next[level];
+            predecessors[level] = pred;
+            successors[level] = curr;
         }
         return foundLevel;
     }
@@ -317,6 +315,5 @@ class LazySkipList final : public SkipList<T>
   private:
     std::shared_ptr<Node> m_head;
     std::shared_ptr<Node> m_sentinel;
-    std::uint16_t m_height;
     std::atomic_size_t m_size;
 };
