@@ -6,23 +6,22 @@
 
 namespace Thread
 {
-static thread_local std::size_t ThreadId;
+static thread_local std::size_t tl_ThreadId;
+static thread_local std::mutex* tl_CriticalMutex = nullptr;
 
 void parallel(std::function<void()> workFunction, std::size_t numberOfThreads)
 {
-    assert(numberOfThreads >= 1 &&
-           "Parallel execution requires at least one thread");
+    std::mutex criticalMutex;
 
     std::vector<std::thread> threads;
-    threads.reserve(numberOfThreads - 1);
-    for (std::size_t i = 1; i < numberOfThreads; i++) {
-        threads.emplace_back([=] {
-            ThreadId = i;
+    threads.reserve(numberOfThreads);
+    for (std::size_t threadId = 0; threadId < numberOfThreads; threadId++) {
+        threads.emplace_back([&, threadId] {
+            tl_ThreadId = threadId;
+            tl_CriticalMutex = &criticalMutex; // mutex outlives the threads
             workFunction();
         });
     }
-    ThreadId = 0;
-    workFunction();
 
     for (auto& thread : threads) {
         thread.join();
@@ -38,14 +37,13 @@ void single(std::function<void()> workFunction)
 
 void critical(std::function<void()> workFunction)
 {
-    static std::mutex mutex;
-
-    std::lock_guard<std::mutex> lock(mutex);
+    assert(tl_CriticalMutex != nullptr);
+    std::lock_guard<std::mutex> lock(*tl_CriticalMutex);
     workFunction();
 }
 
 std::size_t currentThreadId()
 {
-    return ThreadId;
+    return tl_ThreadId;
 }
 }
