@@ -15,6 +15,7 @@ std::ostream& operator<<(std::ostream& out,
                          const BenchmarkConfiguration& config)
 {
     out << "Description: " << config.description
+        << "\nSkip-List height: " << std::to_string(config.listHeight)
         << "\nNumber of threads: " << std::to_string(config.numberOfThreads)
         << "\nNumber of items: " << std::to_string(config.numberOfItems)
         << "\nInitial number of items: "
@@ -162,6 +163,7 @@ void saveBenchmarkResultsAsCsv(
     const auto dumpConfig = [&](std::ostream& out,
                                 const BenchmarkConfiguration& config) {
         out << config.description << seperator
+            << std::to_string(config.listHeight) << seperator
             << std::to_string(config.numberOfThreads) << seperator
             << std::to_string(config.numberOfItems) << seperator
             << std::to_string(config.initialNumberOfItems) << seperator;
