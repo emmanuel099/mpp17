@@ -25,6 +25,7 @@ set_property(TARGET benchmarkcore PROPERTY CXX_CLANG_TIDY ${CLANG_TIDY_PATH};-ch
 set(BENCHMARKS
     ConcurrentSkipListBenchmark.cpp
     LazySkipListBenchmark.cpp
+    SequentialSkipListBenchmark.cpp
 )
 
 foreach(BENCHMARK ${BENCHMARKS})
