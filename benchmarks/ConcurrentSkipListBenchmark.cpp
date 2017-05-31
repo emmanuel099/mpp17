@@ -15,7 +15,7 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
     benchmarkTemplate.numberOfItems = 250000;
     benchmarkTemplate.initialNumberOfItems = 10000;
     benchmarkTemplate.listFactory = [] {
-        return std::make_unique<ConcurrentSkipList<int, SkipListHeight>>();
+        return std::make_unique<ConcurrentSkipList<long, SkipListHeight>>();
     };
 
     for (std::size_t threads = 1;

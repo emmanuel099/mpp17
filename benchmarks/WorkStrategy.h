@@ -9,38 +9,38 @@
 namespace WorkStrategy
 {
 const auto AscendingInsert = [](const BenchmarkConfiguration& config,
-                                SkipList<int>& list) {
+                                SkipList<long>& list) {
     const auto threadId = Thread::currentThreadId();
 
-    const int begin =
+    const long begin =
         threadId * config.numberOfItems + config.initialNumberOfItems;
-    const int end = begin + config.numberOfItems;
+    const long end = begin + config.numberOfItems;
 
-    for (int i = begin; i < end; i++) {
+    for (long i = begin; i < end; i++) {
         list.insert(i);
     }
 };
 
 const auto DescendingInsert = [](const BenchmarkConfiguration& config,
-                                 SkipList<int>& list) {
+                                 SkipList<long>& list) {
     const auto threadId = Thread::currentThreadId();
 
-    const int begin =
+    const long begin =
         threadId * config.numberOfItems + config.initialNumberOfItems;
-    const int end = begin + config.numberOfItems;
+    const long end = begin + config.numberOfItems;
 
-    for (int i = end; i > begin; i--) {
+    for (long i = end; i > begin; i--) {
         list.insert(i);
     }
 };
 
 const auto InterleavingInsert = [](const BenchmarkConfiguration& config,
-                                   SkipList<int>& list) {
+                                   SkipList<long>& list) {
     const auto threadId = Thread::currentThreadId();
     const auto itemsPerThread = config.numberOfItems;
 
-    int number = config.initialNumberOfItems + threadId;
-    for (int i = 0; i < itemsPerThread; i++) {
+    long number = config.initialNumberOfItems + threadId;
+    for (long i = 0; i < itemsPerThread; i++) {
         list.insert(number);
         number += itemsPerThread;
     }
@@ -48,44 +48,44 @@ const auto InterleavingInsert = [](const BenchmarkConfiguration& config,
 
 // Requires at least config.numberOfThreads * config.numberOfItems items
 const auto AscendingRemove = [](const BenchmarkConfiguration& config,
-                                SkipList<int>& list) {
+                                SkipList<long>& list) {
     const auto threadId = Thread::currentThreadId();
 
-    const int begin = threadId * config.numberOfItems;
-    const int end = begin + config.numberOfItems;
+    const long begin = threadId * config.numberOfItems;
+    const long end = begin + config.numberOfItems;
 
-    for (int i = begin; i < end; i++) {
+    for (long i = begin; i < end; i++) {
         list.remove(i);
     }
 };
 
 // Requires at least config.numberOfThreads * config.numberOfItems items
 const auto DescendingRemove = [](const BenchmarkConfiguration& config,
-                                 SkipList<int>& list) {
+                                 SkipList<long>& list) {
     const auto threadId = Thread::currentThreadId();
 
-    const int begin = threadId * config.numberOfItems;
-    const int end = begin + config.numberOfItems;
+    const long begin = threadId * config.numberOfItems;
+    const long end = begin + config.numberOfItems;
 
-    for (int i = end - 1; i >= begin; i--) {
+    for (long i = end - 1; i >= begin; i--) {
         list.remove(i);
     }
 };
 
 // Requires at least config.numberOfThreads * config.numberOfItems items
 const auto InterleavingRemove = [](const BenchmarkConfiguration& config,
-                                   SkipList<int>& list) {
+                                   SkipList<long>& list) {
     const auto threadId = Thread::currentThreadId();
     const auto itemsPerThread = config.numberOfItems;
 
-    int number = threadId;
-    for (int i = 0; i < itemsPerThread; i++) {
+    long number = threadId;
+    for (long i = 0; i < itemsPerThread; i++) {
         list.remove(number);
         number += itemsPerThread;
     }
 };
 
-std::function<void(const BenchmarkConfiguration&, SkipList<int>&)>
+std::function<void(const BenchmarkConfiguration&, SkipList<long>&)>
 createMixedWorkload(double insertingThreads, double removingThreads)
 {
     assert(insertingThreads >= 0.0);
@@ -93,7 +93,7 @@ createMixedWorkload(double insertingThreads, double removingThreads)
     assert((insertingThreads + removingThreads) <= 1.0);
 
     return [insertingThreads, removingThreads](
-        const BenchmarkConfiguration& config, SkipList<int>& list) {
+        const BenchmarkConfiguration& config, SkipList<long>& list) {
         //  0 insert RT removing ST searching
         //  [ ...... | .......... | ........ [
         const std::size_t RT =

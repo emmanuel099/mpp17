@@ -14,8 +14,8 @@ struct BenchmarkConfiguration {
     std::size_t numberOfThreads;
     std::size_t numberOfItems;        /**< number of items per thread */
     std::size_t initialNumberOfItems; /**< fill list before benchmarking */
-    std::function<std::unique_ptr<SkipList<int>>()> listFactory;
-    std::function<void(const BenchmarkConfiguration&, SkipList<int>&)>
+    std::function<std::unique_ptr<SkipList<long>>()> listFactory;
+    std::function<void(const BenchmarkConfiguration&, SkipList<long>&)>
         workStrategy;
 };
 
