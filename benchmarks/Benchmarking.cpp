@@ -1,5 +1,8 @@
 #include "Benchmarking.h"
 
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <mutex>
 
 #include <boost/thread/barrier.hpp>
@@ -27,14 +30,14 @@ std::ostream& operator<<(std::ostream& out, const BenchmarkResult& result)
         << " Ops/s"
         << "\nInsertions: " << std::to_string(result.numberOfInsertions)
         << "\nFailed Insertions: "
-        << std::to_string(result.percentageFailedInsert * 100.0) << " %"
+        << std::to_string(result.percentageFailedInsert) << " %"
         << "\nAvr. No. Retries during Insert: "
         << std::to_string(result.averageNumberOfRetriesDuringInsert)
         << "\nInsert throughput: " << std::to_string(result.insertThroughput)
         << " Ops/s"
         << "\nRemovals: " << std::to_string(result.numberOfRemovals)
         << "\nFailed Removals: "
-        << std::to_string(result.percentageFailedRemove * 100.0) << " %"
+        << std::to_string(result.percentageFailedRemove) << " %"
         << "\nAvr. No. Retries during Remove: "
         << std::to_string(result.averageNumberOfRetriesDuringRemove)
         << "\nRemove throughput: " << std::to_string(result.removeThroughput)
@@ -107,4 +110,92 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
     result.findThroughput = result.numberOfFinds / result.totalTime;
 
     return result;
+}
+
+std::vector<BenchmarkResult>
+runBenchmarks(const std::vector<BenchmarkConfiguration>& configs)
+{
+    std::vector<BenchmarkResult> results;
+    results.reserve(configs.size());
+
+    std::size_t counter = 0;
+    const auto totalNumberStr = std::to_string(configs.size());
+    for (const auto& config : configs) {
+        ++counter;
+
+        std::cout << "[" << std::to_string(counter) << "/" << totalNumberStr
+                  << "] Running benchmark with configuration:\n"
+                  << config << "\n"
+                  << "--------------------------------------------"
+                  << std::endl;
+
+        const auto result = runBenchmark(config);
+        results.push_back(result);
+
+        std::cout << "[" << std::to_string(counter) << "/" << totalNumberStr
+                  << "] Finished benchmark, result is:\n"
+                  << result << "\n"
+                  << "============================================"
+                  << std::endl;
+    }
+
+    return results;
+}
+
+static std::string currentDateTimeStr()
+{
+    const auto now =
+        std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&now), "%Y-%m-%d_%X");
+    return ss.str();
+}
+
+void saveBenchmarkResultsAsCsv(
+    const std::vector<BenchmarkConfiguration>& configs,
+    const std::vector<BenchmarkResult>& results,
+    const std::string& fileNamePrefix)
+{
+    const auto seperator = ";";
+
+    const auto dumpConfig = [&](std::ostream& out,
+                                const BenchmarkConfiguration& config) {
+        out << config.description << seperator
+            << std::to_string(config.numberOfThreads) << seperator
+            << std::to_string(config.numberOfItems) << seperator
+            << std::to_string(config.initialNumberOfItems) << seperator;
+    };
+
+    const auto dumpResult = [&](std::ostream& out,
+                                const BenchmarkResult& result) {
+        out << std::to_string(result.totalTime) << seperator
+            << std::to_string(result.totalThroughput) << seperator
+            << std::to_string(result.numberOfInsertions) << seperator
+            << std::to_string(result.percentageFailedInsert) << seperator
+            << std::to_string(result.averageNumberOfRetriesDuringInsert)
+            << seperator << std::to_string(result.insertThroughput) << seperator
+            << std::to_string(result.numberOfRemovals) << seperator
+            << std::to_string(result.percentageFailedRemove) << seperator
+            << std::to_string(result.averageNumberOfRetriesDuringRemove)
+            << seperator << std::to_string(result.removeThroughput) << seperator
+            << std::to_string(result.numberOfFinds) << seperator
+            << std::to_string(result.averageNumberOfRetriesDuringFind)
+            << seperator << std::to_string(result.findThroughput) << seperator;
+    };
+
+    char hostname[50];
+    gethostname(hostname, 50);
+    const auto fileName =
+        fileNamePrefix + "_" + hostname + "_" + currentDateTimeStr() + ".csv";
+
+    std::ofstream file(fileName, std::ofstream::trunc);
+    for (std::size_t i = 0; i < configs.size(); i++) {
+        dumpConfig(file, configs.at(i));
+        dumpResult(file, results.at(i));
+        file << "\n";
+    }
+    file.close();
+
+    std::cout << "Saved benchmark results to `" << fileName << "`" << std::endl;
 }

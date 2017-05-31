@@ -150,8 +150,7 @@ double SkipListStatistics::percentageFailedInserts() const
         return 0.0;
     }
 
-    return static_cast<double>(m_numberOfFailedInsertions) /
-           m_numberOfInsertions;
+    return m_numberOfFailedInsertions * 100.0 / m_numberOfInsertions;
 }
 
 std::size_t SkipListStatistics::numberOfDeletions() const
@@ -179,7 +178,7 @@ double SkipListStatistics::percentageFailedDeletions() const
         return 0.0;
     }
 
-    return static_cast<double>(m_numberOfFailedDeletions) / m_numberOfDeletions;
+    return m_numberOfFailedDeletions * 100.0 / m_numberOfDeletions;
 }
 
 std::size_t SkipListStatistics::numberOfLookups() const

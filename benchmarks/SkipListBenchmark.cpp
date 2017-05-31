@@ -19,28 +19,28 @@ int main(int argc, char** argv)
 
     {
         BenchmarkConfiguration benchmark = benchmarkTemplate;
-        benchmark.description = "ConcurrentSkipList - ascending insert";
+        benchmark.description = "ascending insert";
         benchmark.workStrategy = WorkStrategy::AscendingInsert;
         benchmarks.push_back(benchmark);
     }
 
     {
         BenchmarkConfiguration benchmark = benchmarkTemplate;
-        benchmark.description = "ConcurrentSkipList - descending insert";
+        benchmark.description = "descending insert";
         benchmark.workStrategy = WorkStrategy::DescendingInsert;
         benchmarks.push_back(benchmark);
     }
 
     {
         BenchmarkConfiguration benchmark = benchmarkTemplate;
-        benchmark.description = "ConcurrentSkipList - interleaving insert";
+        benchmark.description = "interleaving insert";
         benchmark.workStrategy = WorkStrategy::InterleavingInsert;
         benchmarks.push_back(benchmark);
     }
 
     /*{
         BenchmarkConfiguration benchmark = benchmarkTemplate;
-        benchmark.description = "ConcurrentSkipList - ascending remove";
+        benchmark.description = "ascending remove";
         benchmark.numberOfItems = 500000;
         benchmark.initialNumberOfItems =
             benchmark.numberOfThreads * benchmark.numberOfItems;
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 
     {
         BenchmarkConfiguration benchmark = benchmarkTemplate;
-        benchmark.description = "ConcurrentSkipList - descending remove";
+        benchmark.description = "descending remove";
         benchmark.numberOfItems = 500000;
         benchmark.initialNumberOfItems =
             benchmark.numberOfThreads * benchmark.numberOfItems;
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 
     {
         BenchmarkConfiguration benchmark = benchmarkTemplate;
-        benchmark.description = "ConcurrentSkipList - interleaving remove";
+        benchmark.description = "interleaving remove";
         benchmark.numberOfItems = 500000;
         benchmark.initialNumberOfItems =
             benchmark.numberOfThreads * benchmark.numberOfItems;
@@ -68,19 +68,8 @@ int main(int argc, char** argv)
         benchmarks.push_back(benchmark);
     }*/
 
-    for (const auto& benchmark : benchmarks) {
-        std::cout << "Running benchmark with configuration:\n"
-                  << benchmark << "\n"
-                  << "--------------------------------------------"
-                  << std::endl;
-
-        const auto result = runBenchmark(benchmark);
-
-        std::cout << "Finished benchmark, result is:\n"
-                  << result << "\n"
-                  << "============================================"
-                  << std::endl;
-    }
+    const auto results = runBenchmarks(benchmarks);
+    saveBenchmarkResultsAsCsv(benchmarks, results, "ConcurrentSkipList");
 
     return EXIT_SUCCESS;
 }

@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "SkipList.h"
 
@@ -39,3 +40,11 @@ struct BenchmarkResult {
 std::ostream& operator<<(std::ostream& out, const BenchmarkResult& result);
 
 BenchmarkResult runBenchmark(const BenchmarkConfiguration& config);
+
+std::vector<BenchmarkResult>
+runBenchmarks(const std::vector<BenchmarkConfiguration>& configs);
+
+void saveBenchmarkResultsAsCsv(
+    const std::vector<BenchmarkConfiguration>& configs,
+    const std::vector<BenchmarkResult>& results,
+    const std::string& fileNamePrefix);
