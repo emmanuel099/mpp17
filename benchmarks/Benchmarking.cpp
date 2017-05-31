@@ -57,7 +57,7 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
     const auto list = config.listFactory();
 
     // pre-fill list
-    for (int i = 0; i < config.initialNumberOfItems; i++) {
+    for (long i = 0; i < config.initialNumberOfItems; i++) {
         list->insert(i);
     }
 

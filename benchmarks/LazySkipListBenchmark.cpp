@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     benchmarkTemplate.numberOfItems = 250000;
     benchmarkTemplate.initialNumberOfItems = 10000;
     benchmarkTemplate.listFactory = [] {
-        return std::make_unique<LazySkipList<int, 16>>();
+        return std::make_unique<LazySkipList<long, 16>>();
     };
 
     {

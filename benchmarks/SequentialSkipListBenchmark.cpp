@@ -16,7 +16,7 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
     benchmarkTemplate.initialNumberOfItems = 10000;
     benchmarkTemplate.numberOfThreads = 1;
     benchmarkTemplate.listFactory = [] {
-        return std::make_unique<SequentialSkipList<int, SkipListHeight>>();
+        return std::make_unique<SequentialSkipList<long, SkipListHeight>>();
     };
 
     {
