@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 #include "Benchmarking.h"
 #include "SkipList.h"
 #include "Thread.h"
@@ -47,9 +49,6 @@ const auto InterleavingInsert = [](const BenchmarkConfiguration& config,
 // Requires at least config.numberOfThreads * config.numberOfItems items
 const auto AscendingRemove = [](const BenchmarkConfiguration& config,
                                 SkipList<int>& list) {
-    assert(config.initialNumberOfItems >=
-           (config.numberOfThreads * config.numberOfItems));
-
     const auto threadId = Thread::currentThreadId();
 
     const int begin = threadId * config.numberOfItems;
@@ -63,9 +62,6 @@ const auto AscendingRemove = [](const BenchmarkConfiguration& config,
 // Requires at least config.numberOfThreads * config.numberOfItems items
 const auto DescendingRemove = [](const BenchmarkConfiguration& config,
                                  SkipList<int>& list) {
-    assert(config.initialNumberOfItems >=
-           (config.numberOfThreads * config.numberOfItems));
-
     const auto threadId = Thread::currentThreadId();
 
     const int begin = threadId * config.numberOfItems;
@@ -79,9 +75,6 @@ const auto DescendingRemove = [](const BenchmarkConfiguration& config,
 // Requires at least config.numberOfThreads * config.numberOfItems items
 const auto InterleavingRemove = [](const BenchmarkConfiguration& config,
                                    SkipList<int>& list) {
-    assert(config.initialNumberOfItems >=
-           (config.numberOfThreads * config.numberOfItems));
-
     const auto threadId = Thread::currentThreadId();
     const auto itemsPerThread = config.numberOfItems;
 
