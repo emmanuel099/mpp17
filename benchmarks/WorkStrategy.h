@@ -71,7 +71,7 @@ const auto DescendingRemove = [](const BenchmarkConfiguration& config,
     const int begin = threadId * config.numberOfItems;
     const int end = begin + config.numberOfItems;
 
-    for (int i = end; i > begin; i--) {
+    for (int i = end - 1; i >= begin; i--) {
         list.remove(i);
     }
 };
