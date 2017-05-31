@@ -31,8 +31,9 @@ class LazySkipList final : public SkipList<T>
             , height(height)
         {
         }
-        
-        ~Node() {
+
+        ~Node()
+        {
             for (std::uint16_t i = 0; i < MaximumHeight; ++i) {
                 next[i].reset();
             }
@@ -78,7 +79,7 @@ class LazySkipList final : public SkipList<T>
 #ifdef COLLECT_STATISTICS
         SkipListStatistics::threadLocalInstance().insertionStart();
 #endif
-        
+
         const auto newHeight = randomHeight();
         std::array<std::shared_ptr<Node>, MaximumHeight> predecessors;
         std::array<std::shared_ptr<Node>, MaximumHeight> successors;
@@ -91,7 +92,8 @@ class LazySkipList final : public SkipList<T>
                     while (!foundNode->fullyLinked) {
                     } // wait until found node is completely inserted
 #ifdef COLLECT_STATISTICS
-                    SkipListStatistics::threadLocalInstance().insertionFailure();
+                    SkipListStatistics::threadLocalInstance()
+                        .insertionFailure();
 #endif
                     return false;
                 }
@@ -141,7 +143,7 @@ class LazySkipList final : public SkipList<T>
             for (std::uint16_t level = 0; level <= maxLockedLevel; ++level) {
                 predecessors[level]->mutex.unlock();
             }
-            
+
 #ifdef COLLECT_STATISTICS
             SkipListStatistics::threadLocalInstance().insertionSuccess();
 #endif
@@ -162,7 +164,7 @@ class LazySkipList final : public SkipList<T>
             auto foundLevel = find(value, predecessors, successors);
             if (foundLevel == -1) { // node not found
 #ifdef COLLECT_STATISTICS
-            SkipListStatistics::threadLocalInstance().deletionFailure();
+                SkipListStatistics::threadLocalInstance().deletionFailure();
 #endif
                 return false;
             }
@@ -175,7 +177,8 @@ class LazySkipList final : public SkipList<T>
                     if (node->marked) {
                         node->mutex.unlock();
 #ifdef COLLECT_STATISTICS
-                        SkipListStatistics::threadLocalInstance().deletionFailure();
+                        SkipListStatistics::threadLocalInstance()
+                            .deletionFailure();
 #endif
                         return false;
                     }
