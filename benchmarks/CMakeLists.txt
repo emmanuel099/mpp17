@@ -1,8 +1,13 @@
 include_directories (${SkipList_SOURCE_DIR}/src)
 
-add_library(benchmarkcore
+add_library(benchmarkcore SHARED
     Benchmarking.cpp
     Thread.cpp
+)
+
+target_link_libraries(benchmarkcore
+    skiplistcore
+    ${Boost_LIBRARIES}
 )
 
 target_compile_options(benchmarkcore
@@ -31,9 +36,7 @@ foreach(BENCHMARK ${BENCHMARKS})
     )
 
     target_link_libraries(${TARGET_NAME}
-        skiplistcore
         benchmarkcore
-        ${Boost_LIBRARIES}
     )
 
     target_compile_options(${TARGET_NAME}
