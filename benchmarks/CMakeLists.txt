@@ -17,26 +17,36 @@ set_property(TARGET benchmarkcore PROPERTY CXX_CLANG_TIDY ${CLANG_TIDY_PATH};-ch
 
 ################################################################################
 
-add_executable(skiplist_benchmarks
+set(BENCHMARKS
     SkipListBenchmark.cpp
+    LazySkipListBenchmark.cpp
 )
 
-target_link_libraries(skiplist_benchmarks
-    skiplistcore
-    benchmarkcore
-    ${Boost_LIBRARIES}
-)
+foreach(BENCHMARK ${BENCHMARKS})
+    set(TARGET_NAME Benchmark_${BENCHMARK})
+    string(REPLACE ".cpp" "" TARGET_NAME ${TARGET_NAME})
 
-target_compile_options(skiplist_benchmarks
-    PUBLIC
-        -Wall
-        -Wextra
-        -Wno-deprecated
-    PRIVATE
-        -DCOLLECT_STATISTICS
-)
+    add_executable(${TARGET_NAME}
+        ${BENCHMARK}
+    )
 
-set_property(TARGET skiplist_benchmarks PROPERTY CXX_STANDARD 14)
-set_property(TARGET skiplist_benchmarks PROPERTY CXX_CLANG_TIDY ${CLANG_TIDY_PATH};-checks=*)
+    target_link_libraries(${TARGET_NAME}
+        skiplistcore
+        benchmarkcore
+        ${Boost_LIBRARIES}
+    )
 
-add_test(AllBenchmarks skiplist_benchmarks)
+    target_compile_options(${TARGET_NAME}
+        PUBLIC
+            -Wall
+            -Wextra
+            -Wno-deprecated
+        PRIVATE
+            -DCOLLECT_STATISTICS
+    )
+
+    set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 14)
+    set_property(TARGET ${TARGET_NAME} PROPERTY CXX_CLANG_TIDY ${CLANG_TIDY_PATH};-checks=*)
+
+    add_test(${TARGET_NAME} ${TARGET_NAME})
+endforeach()
