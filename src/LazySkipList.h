@@ -32,6 +32,13 @@ class LazySkipList final : public SkipList<T>
         {
         }
 
+        ~Node()
+        {
+            for (std::uint16_t i = 0; i < MaximumHeight; ++i) {
+                next[i].reset();
+            }
+        }
+
         const value_type value;
         std::array<std::shared_ptr<Node>, MaximumHeight> next;
         const std::uint16_t height;
