@@ -197,7 +197,8 @@ class LazySkipList final : public SkipList<T>
 
                 // remove node
                 for (std::int32_t level = node->height; level >= 0; --level) {
-                    predecessors[level]->next[level] = node->next[level];
+                    std::atomic_store(&predecessors[level]->next[level],
+                                      node->next[level]);
                 }
                 node->mutex.unlock();
 
