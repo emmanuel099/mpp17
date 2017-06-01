@@ -84,9 +84,9 @@ class LazySkipList final : public SkipList<T>
         std::array<std::shared_ptr<Node>, MaximumHeight> successors;
 
         while (true) {
-            auto foundLevel = find(value, predecessors, successors);
+            const auto foundLevel = find(value, predecessors, successors);
             if (foundLevel != -1) { // already in list
-                auto foundNode = successors[foundLevel];
+                const auto& foundNode = successors[foundLevel];
                 if (!foundNode->marked) {
                     while (!foundNode->fullyLinked) {
                     } // wait until found node is completely inserted
@@ -128,7 +128,7 @@ class LazySkipList final : public SkipList<T>
             }
 
             // update successors and predecessors
-            auto newNode = std::make_shared<Node>(value, newHeight);
+            const auto newNode = std::make_shared<Node>(value, newHeight);
             newNode->next = successors;
             for (std::uint16_t level = 0; level <= newHeight; ++level) {
                 std::atomic_store(&predecessors[level]->next[level], newNode);
@@ -158,7 +158,7 @@ class LazySkipList final : public SkipList<T>
         std::array<std::shared_ptr<Node>, MaximumHeight> successors;
 
         while (true) {
-            auto foundLevel = find(value, predecessors, successors);
+            const auto foundLevel = find(value, predecessors, successors);
             if (foundLevel == -1) { // node not found
 #ifdef COLLECT_STATISTICS
                 SkipListStatistics::threadLocalInstance().deletionFailure();
@@ -166,7 +166,7 @@ class LazySkipList final : public SkipList<T>
                 return false;
             }
 
-            auto node = successors[foundLevel];
+            const auto& node = successors[foundLevel];
             if (retryInProgress || (node->fullyLinked && !node->marked &&
                                     node->height == foundLevel)) {
                 if (!retryInProgress) { // executed only on first try
@@ -189,7 +189,7 @@ class LazySkipList final : public SkipList<T>
                 std::uint16_t maxLockedLevel = 0;
                 for (std::uint16_t level = 0; valid && (level <= node->height);
                      ++level) {
-                    std::shared_ptr<Node> pred = predecessors[level];
+                    const auto& pred = predecessors[level];
                     pred->mutex.lock();
                     maxLockedLevel = level;
                     valid = !pred->marked && pred->next[level] == node;
@@ -238,7 +238,7 @@ class LazySkipList final : public SkipList<T>
 #endif
         std::array<std::shared_ptr<Node>, MaximumHeight> predecessors;
         std::array<std::shared_ptr<Node>, MaximumHeight> successors;
-        auto onLevel = find(value, predecessors, successors);
+        const auto onLevel = find(value, predecessors, successors);
 
 #ifdef COLLECT_STATISTICS
         SkipListStatistics::threadLocalInstance().lookupDone();
