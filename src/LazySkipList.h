@@ -107,8 +107,8 @@ class LazySkipList final : public SkipList<T>
             std::uint16_t maxLockedLevel = 0;
             for (std::uint16_t level = 0; valid && (level <= newHeight);
                  ++level) {
-                std::shared_ptr<Node> pred = predecessors[level];
-                std::shared_ptr<Node> succ = successors[level];
+                const auto& pred = predecessors[level];
+                const auto& succ = successors[level];
                 pred->mutex.lock();
                 maxLockedLevel = level;
                 valid =
@@ -129,11 +129,9 @@ class LazySkipList final : public SkipList<T>
 
             // update successors and predecessors
             auto newNode = std::make_shared<Node>(value, newHeight);
+            newNode->next = successors;
             for (std::uint16_t level = 0; level <= newHeight; ++level) {
-                newNode->next[level] = successors[level];
-            }
-            for (std::uint16_t level = 0; level <= newHeight; ++level) {
-                predecessors[level]->next[level] = newNode;
+                std::atomic_store(&predecessors[level]->next[level], newNode);
             }
             newNode->fullyLinked = true; // insert linearization point
             ++m_size;
@@ -278,10 +276,10 @@ class LazySkipList final : public SkipList<T>
         std::int32_t foundLevel = -1;
         auto pred = m_head;
         for (std::int32_t level = (MaximumHeight - 1); level >= 0; --level) {
-            auto curr = pred->next[level];
+            auto curr = std::atomic_load(&pred->next[level]);
             while (curr->value < value) {
                 pred = curr;
-                curr = pred->next[level];
+                curr = std::atomic_load(&pred->next[level]);
             }
 
             if (foundLevel == -1 && curr->value == value) {
