@@ -129,7 +129,7 @@ class LazySkipList final : public SkipList<T>
 
             // update successors and predecessors
             const auto newNode = std::make_shared<Node>(value, newHeight);
-            newNode->next = successors;
+            newNode->next = std::move(successors);
             for (std::uint16_t level = 0; level <= newHeight; ++level) {
                 std::atomic_store(&predecessors[level]->next[level], newNode);
             }
@@ -278,7 +278,7 @@ class LazySkipList final : public SkipList<T>
         for (std::int32_t level = (MaximumHeight - 1); level >= 0; --level) {
             auto curr = std::atomic_load(&pred->next[level]);
             while (curr->value < value) {
-                pred = curr;
+                pred = std::move(curr);
                 curr = std::atomic_load(&pred->next[level]);
             }
 
@@ -314,7 +314,7 @@ class LazySkipList final : public SkipList<T>
     }
 
   private:
-    std::shared_ptr<Node> m_head;
-    std::shared_ptr<Node> m_sentinel;
+    const std::shared_ptr<Node> m_head;
+    const std::shared_ptr<Node> m_sentinel;
     std::atomic_size_t m_size;
 };
