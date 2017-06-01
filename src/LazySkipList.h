@@ -36,8 +36,8 @@ class LazySkipList final : public SkipList<T>
         std::array<std::shared_ptr<Node>, MaximumHeight> next;
         const std::uint16_t height;
         std::recursive_mutex mutex;
-        bool marked = false;
-        bool fullyLinked = false;
+        volatile bool marked = false;
+        volatile bool fullyLinked = false;
     };
 
   public:
@@ -237,22 +237,24 @@ class LazySkipList final : public SkipList<T>
 
     void clear() override
     {
-        // lock all nodes
-        for (auto current = m_head; current != m_sentinel;) {
-            current->mutex.lock();
-            current = current->next[0];
+        std::lock_guard<std::recursive_mutex> lock(m_head->mutex);
+
+        // mark all nodes (expect of head and sentinel)
+        for (auto current = std::atomic_load(&m_head->next[0]);
+             current != m_sentinel;
+             current = std::atomic_load(&current->next[0])) {
+            while (not current->fullyLinked or current->marked) {
+            }
+            std::lock_guard<std::recursive_mutex> currentLock(current->mutex);
+            current->marked = true; // ignore if it was marked in the meantime
         }
 
-        // delete all nodes
-        for (auto current = m_head; current != nullptr;) {
-            auto next = current->next[0];
-            current.reset();
-            current = next;
+        // fully re-connect head with sentinel
+        for (std::uint16_t level = 0; level < MaximumHeight; ++level) {
+            std::atomic_store(&m_head->next[level], m_sentinel);
         }
 
-        m_head->next.fill(m_sentinel);
         m_size = 0;
-        m_head->mutex.unlock();
     }
 
   private:
