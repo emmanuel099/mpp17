@@ -51,10 +51,6 @@ class LazySkipList final : public SkipList<T>
         m_head->next.fill(m_sentinel); // connect head with sentinel
     }
 
-    ~LazySkipList() override
-    {
-    }
-
     bool empty() override
     {
         return m_size == 0;
