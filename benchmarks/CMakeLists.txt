@@ -1,6 +1,6 @@
 include_directories (${SkipList_SOURCE_DIR}/src)
 
-add_library(benchmarkcore SHARED
+add_library(benchmarkcore STATIC
     Benchmarking.cpp
     Thread.cpp
 )

@@ -1,4 +1,4 @@
-add_library(skiplistcore SHARED
+add_library(skiplistcore STATIC
     SkipListStatistics.cpp
 )
 
