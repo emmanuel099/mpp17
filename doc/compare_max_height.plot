@@ -13,7 +13,7 @@ set xlabel "#Threads"
 set ylabel "Throughput [ops/s]"
 
 # input file sparator
-set datafile separator ","
+set datafile separator ";"
 
 # line style
 set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7 ps 0.75
