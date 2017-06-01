@@ -18,7 +18,7 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
     };
 
     for (std::size_t threads = 1;
-         threads <= std::thread::hardware_concurrency(); threads += 2) {
+         threads <= std::thread::hardware_concurrency(); threads *= 2) {
         benchmarkTemplate.numberOfThreads = threads;
 
         {
