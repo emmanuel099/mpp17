@@ -11,7 +11,7 @@
 #include "SkipListStatistics.h"
 
 template <typename T, std::uint16_t MaximumHeight>
-class LazySkipList final : public SkipList<T>
+class MemoryManagedLazySkipList final : public SkipList<T>
 {
   public:
     static_assert(MaximumHeight > 0, "Maximum height must be greater than 0");
@@ -34,11 +34,13 @@ class LazySkipList final : public SkipList<T>
 
         ~Node()
         {
-            
+            for (std::uint16_t i = 0; i < MaximumHeight; ++i) {
+                next[i].reset();
+            }
         }
 
         const value_type value;
-        std::array<Node*, MaximumHeight> next;
+        std::array<std::shared_ptr<Node>, MaximumHeight> next;
         const std::uint16_t height;
         std::recursive_mutex mutex;
         volatile bool marked = false;
@@ -46,10 +48,10 @@ class LazySkipList final : public SkipList<T>
     };
 
   public:
-    LazySkipList()
-        : m_head(new Node(std::numeric_limits<value_type>::min(),
+    MemoryManagedLazySkipList()
+        : m_head(std::make_shared<Node>(std::numeric_limits<value_type>::min(),
                                         MaximumHeight))
-        , m_sentinel(new Node(
+        , m_sentinel(std::make_shared<Node>(
               std::numeric_limits<value_type>::max(), MaximumHeight))
         , m_size(0)
     {
@@ -73,8 +75,8 @@ class LazySkipList final : public SkipList<T>
 #endif
 
         const auto newHeight = randomHeight();
-        std::array<Node*, MaximumHeight> predecessors;
-        std::array<Node*, MaximumHeight> successors;
+        std::array<std::shared_ptr<Node>, MaximumHeight> predecessors;
+        std::array<std::shared_ptr<Node>, MaximumHeight> successors;
 
         while (true) {
             const auto foundLevel = find(value, predecessors, successors);
@@ -121,10 +123,10 @@ class LazySkipList final : public SkipList<T>
             }
 
             // update successors and predecessors
-            const auto& newNode = new Node(value, newHeight);
-            newNode->next = successors;
+            const auto newNode = std::make_shared<Node>(value, newHeight);
+            newNode->next = std::move(successors);
             for (std::uint16_t level = 0; level <= newHeight; ++level) {
-                predecessors[level]->next[level] = newNode;
+                std::atomic_store(&predecessors[level]->next[level], newNode);
             }
             newNode->fullyLinked = true; // insert linearization point
             ++m_size;
@@ -147,8 +149,8 @@ class LazySkipList final : public SkipList<T>
         SkipListStatistics::threadLocalInstance().deletionStart();
 #endif
         bool retryInProgress = false;
-        std::array<Node*, MaximumHeight> predecessors;
-        std::array<Node*, MaximumHeight> successors;
+        std::array<std::shared_ptr<Node>, MaximumHeight> predecessors;
+        std::array<std::shared_ptr<Node>, MaximumHeight> successors;
 
         while (true) {
             const auto foundLevel = find(value, predecessors, successors);
@@ -202,7 +204,8 @@ class LazySkipList final : public SkipList<T>
 
                 // remove node
                 for (std::int32_t level = node->height; level >= 0; --level) {
-                   predecessors[level]->next[level] = node->next[level];
+                    std::atomic_store(&predecessors[level]->next[level],
+                                      node->next[level]);
                 }
                 node->mutex.unlock();
 
@@ -229,8 +232,8 @@ class LazySkipList final : public SkipList<T>
 #ifdef COLLECT_STATISTICS
         SkipListStatistics::threadLocalInstance().lookupStart();
 #endif
-        std::array<Node*, MaximumHeight> predecessors;
-        std::array<Node*, MaximumHeight> successors;
+        std::array<std::shared_ptr<Node>, MaximumHeight> predecessors;
+        std::array<std::shared_ptr<Node>, MaximumHeight> successors;
         const auto onLevel = find(value, predecessors, successors);
 
 #ifdef COLLECT_STATISTICS
@@ -245,9 +248,9 @@ class LazySkipList final : public SkipList<T>
         std::lock_guard<std::recursive_mutex> lock(m_head->mutex);
 
         // mark all nodes (expect of head and sentinel)
-        for (auto& current = m_head->next[0];
+        for (auto current = std::atomic_load(&m_head->next[0]);
              current != m_sentinel;
-             current = current->next[0]) {
+             current = std::atomic_load(&current->next[0])) {
             while (not current->fullyLinked or current->marked) {
             }
             std::lock_guard<std::recursive_mutex> currentLock(current->mutex);
@@ -256,7 +259,7 @@ class LazySkipList final : public SkipList<T>
 
         // fully re-connect head with sentinel
         for (std::uint16_t level = 0; level < MaximumHeight; ++level) {
-           m_head->next[level] = m_sentinel;
+            std::atomic_store(&m_head->next[level], m_sentinel);
         }
 
         m_size = 0;
@@ -265,16 +268,16 @@ class LazySkipList final : public SkipList<T>
   private:
     std::int32_t
     find(const_reference value,
-         std::array<Node*, MaximumHeight>& predecessors,
-         std::array<Node*, MaximumHeight>& successors) const
+         std::array<std::shared_ptr<Node>, MaximumHeight>& predecessors,
+         std::array<std::shared_ptr<Node>, MaximumHeight>& successors) const
     {
         std::int32_t foundLevel = -1;
-        auto* pred = m_head;
+        auto pred = m_head;
         for (std::int32_t level = (MaximumHeight - 1); level >= 0; --level) {
-            auto* curr = pred->next[level];
+            auto curr = std::atomic_load(&pred->next[level]);
             while (curr->value < value) {
-                pred = curr;
-                curr = pred->next[level];
+                pred = std::move(curr);
+                curr = std::atomic_load(&pred->next[level]);
             }
 
             if (foundLevel == -1 && curr->value == value) {
@@ -309,7 +312,7 @@ class LazySkipList final : public SkipList<T>
     }
 
   private:
-    Node* m_head;
-    Node* m_sentinel;
+    const std::shared_ptr<Node> m_head;
+    const std::shared_ptr<Node> m_sentinel;
     std::atomic_size_t m_size;
 };
