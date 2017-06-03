@@ -4,6 +4,7 @@
 #include <vector> 
 
 #include "Benchmarking.h"
+#include "LockFreeSkipList.h"
 #include "LazySkipList.h"
 #include "MemoryManagedLazySkipList.h"
 #include "ConcurrentSkipList.h"
@@ -24,7 +25,7 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
     for (std::size_t threads = 1;
          threads <= std::thread::hardware_concurrency(); threads *= 2) {
         benchmarkTemplate.numberOfThreads = threads;
-
+    
         {
             BenchmarkConfiguration benchmark = benchmarkTemplate;
             benchmark.description = "ascending insert - no failed inserts";
@@ -38,7 +39,7 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
             benchmark.workStrategy = WorkStrategy::DescendingInsert;
             benchmarks.push_back(benchmark);
         }
-
+        
         {
             BenchmarkConfiguration benchmark = benchmarkTemplate;
             benchmark.description = "interleaving insert - no failed inserts";
@@ -112,6 +113,17 @@ int main(int argc, char** argv)
         createBenchmarksForListHeight<MemoryManagedLazySkipList,64>(benchmarks);
 
         saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks), "MemoryManagedLazySkipList");
+    }
+    
+    if (benchmark_enabled("LockFreeSkipList")) {
+        std::cout << "Running LockFreeSkipList benchmark:" << std::endl;
+        
+        std::vector<BenchmarkConfiguration> benchmarks;
+        createBenchmarksForListHeight<LockFreeSkipList,8>(benchmarks);
+        createBenchmarksForListHeight<LockFreeSkipList,16>(benchmarks);
+        createBenchmarksForListHeight<LockFreeSkipList,64>(benchmarks);
+
+        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks), "LockFreeSkipList");
     }
 
     return EXIT_SUCCESS;
