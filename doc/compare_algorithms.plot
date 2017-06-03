@@ -26,3 +26,5 @@ set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7 ps 0.75
 
 plot '<grep "' . strategy . '" ConcurrentSkipList*.csv' using 3:(column(2) == max_height? $7:1/0) title "ConcurrentSkipList" with linespoints ls 1 lt rgb "green" , \
      '<grep "' . strategy . '" LazySkipList*.csv' using 3:(column(2) == max_height? $7:1/0) title "LazySkipList" with linespoints ls 1 lt rgb "red", \
+     '<grep "' . strategy . '" MemoryManagedLazySkipList*.csv' using 3:(column(2) == max_height? $7:1/0) title "MemoryManagedLazySkipList" with linespoints ls 1 lt rgb "blue", \
+     '<grep "' . strategy . '" LockFreeSkipList*.csv' using 3:(column(2) == max_height? $7:1/0) title "LockFreeSkipList" with linespoints ls 1 lt rgb "orange", \
