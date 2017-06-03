@@ -4,6 +4,7 @@ add_executable(skiplist_tests
     SequentialSkipList.cpp
     ConcurrentSkipListTest.cpp
     LazySkipListTest.cpp
+    LockFreeSkipListTest.cpp
 )
 
 target_link_libraries(skiplist_tests
