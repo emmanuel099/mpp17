@@ -31,10 +31,9 @@ class LazySkipList final : public SkipList<T>
             , height(height)
         {
         }
-        
+
         ~Node()
         {
-            
         }
 
         const value_type value;
@@ -47,16 +46,16 @@ class LazySkipList final : public SkipList<T>
 
   public:
     LazySkipList()
-        : m_head(new Node(std::numeric_limits<value_type>::min(),
-                                        MaximumHeight))
-        , m_sentinel(new Node(
-              std::numeric_limits<value_type>::max(), MaximumHeight))
+        : m_head(
+              new Node(std::numeric_limits<value_type>::min(), MaximumHeight))
+        , m_sentinel(
+              new Node(std::numeric_limits<value_type>::max(), MaximumHeight))
         , m_size(0)
     {
         m_head->next.fill(m_sentinel); // connect head with sentinel
         m_sentinel->next.fill(nullptr);
     }
-    
+
     ~LazySkipList() override
     {
         for (auto* current = m_head; current != nullptr;) {
@@ -212,7 +211,7 @@ class LazySkipList final : public SkipList<T>
 
                 // remove node
                 for (std::int32_t level = node->height; level >= 0; --level) {
-                   predecessors[level]->next[level] = node->next[level];
+                    predecessors[level]->next[level] = node->next[level];
                 }
                 node->mutex.unlock();
 
@@ -255,8 +254,7 @@ class LazySkipList final : public SkipList<T>
         std::lock_guard<std::recursive_mutex> lock(m_head->mutex);
 
         // mark all nodes (expect of head and sentinel)
-        for (auto& current = m_head->next[0];
-             current != m_sentinel;
+        for (auto& current = m_head->next[0]; current != m_sentinel;
              current = current->next[0]) {
             while (not current->fullyLinked or current->marked) {
             }
@@ -266,17 +264,16 @@ class LazySkipList final : public SkipList<T>
 
         // fully re-connect head with sentinel
         for (std::uint16_t level = 0; level < MaximumHeight; ++level) {
-           m_head->next[level] = m_sentinel;
+            m_head->next[level] = m_sentinel;
         }
 
         m_size = 0;
     }
 
   private:
-    std::int32_t
-    find(const_reference value,
-         std::array<Node*, MaximumHeight>& predecessors,
-         std::array<Node*, MaximumHeight>& successors) const
+    std::int32_t find(const_reference value,
+                      std::array<Node*, MaximumHeight>& predecessors,
+                      std::array<Node*, MaximumHeight>& successors) const
     {
         std::int32_t foundLevel = -1;
         auto* pred = m_head;

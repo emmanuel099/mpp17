@@ -1,16 +1,17 @@
 #include <algorithm>
 #include <iostream>
-#include <string> 
-#include <vector> 
+#include <string>
+#include <vector>
 
 #include "Benchmarking.h"
-#include "LockFreeSkipList.h"
-#include "LazySkipList.h"
-#include "MemoryManagedLazySkipList.h"
 #include "ConcurrentSkipList.h"
+#include "LazySkipList.h"
+#include "LockFreeSkipList.h"
+#include "MemoryManagedLazySkipList.h"
 #include "WorkStrategy.h"
 
-template <template <typename, std::uint16_t> class T, std::uint16_t SkipListHeight>
+template <template <typename, std::uint16_t> class T,
+          std::uint16_t SkipListHeight>
 static void
 createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
 {
@@ -25,7 +26,7 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
     for (std::size_t threads = 1;
          threads <= std::thread::hardware_concurrency(); threads *= 2) {
         benchmarkTemplate.numberOfThreads = threads;
-    
+
         {
             BenchmarkConfiguration benchmark = benchmarkTemplate;
             benchmark.description = "ascending insert - no failed inserts";
@@ -39,7 +40,7 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
             benchmark.workStrategy = WorkStrategy::DescendingInsert;
             benchmarks.push_back(benchmark);
         }
-        
+
         {
             BenchmarkConfiguration benchmark = benchmarkTemplate;
             benchmark.description = "interleaving insert - no failed inserts";
@@ -79,51 +80,59 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
 int main(int argc, char** argv)
 {
     auto benchmark_enabled = [argc, argv](std::string name) {
-        return argc == 1 or std::find(argv + 1, argv + argc, name) != argv + argc;
+        return argc == 1 or
+               std::find(argv + 1, argv + argc, name) != argv + argc;
     };
-    
+
     if (benchmark_enabled("ConcurrentSkipList")) {
         std::cout << "Running ConcurrentSkipList benchmark:" << std::endl;
-        
-        std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<ConcurrentSkipList,8>(benchmarks);
-        createBenchmarksForListHeight<ConcurrentSkipList,16>(benchmarks);
-        createBenchmarksForListHeight<ConcurrentSkipList,64>(benchmarks);
 
-        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks), "ConcurrentSkipList");
+        std::vector<BenchmarkConfiguration> benchmarks;
+        createBenchmarksForListHeight<ConcurrentSkipList, 8>(benchmarks);
+        createBenchmarksForListHeight<ConcurrentSkipList, 16>(benchmarks);
+        createBenchmarksForListHeight<ConcurrentSkipList, 64>(benchmarks);
+
+        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks),
+                                  "ConcurrentSkipList");
     }
-    
+
     if (benchmark_enabled("LazySkipList")) {
         std::cout << "Running LazySkipList benchmark:" << std::endl;
-        
-        std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<LazySkipList,8>(benchmarks);
-        createBenchmarksForListHeight<LazySkipList,16>(benchmarks);
-        createBenchmarksForListHeight<LazySkipList,64>(benchmarks);
 
-        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks), "LazySkipList");
+        std::vector<BenchmarkConfiguration> benchmarks;
+        createBenchmarksForListHeight<LazySkipList, 8>(benchmarks);
+        createBenchmarksForListHeight<LazySkipList, 16>(benchmarks);
+        createBenchmarksForListHeight<LazySkipList, 64>(benchmarks);
+
+        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks),
+                                  "LazySkipList");
     }
-    
+
     if (benchmark_enabled("MemoryManagedLazySkipList")) {
-        std::cout << "Running MemoryManagedLazySkipList benchmark:" << std::endl;
-        
-        std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<MemoryManagedLazySkipList,8>(benchmarks);
-        createBenchmarksForListHeight<MemoryManagedLazySkipList,16>(benchmarks);
-        createBenchmarksForListHeight<MemoryManagedLazySkipList,64>(benchmarks);
+        std::cout << "Running MemoryManagedLazySkipList benchmark:"
+                  << std::endl;
 
-        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks), "MemoryManagedLazySkipList");
+        std::vector<BenchmarkConfiguration> benchmarks;
+        createBenchmarksForListHeight<MemoryManagedLazySkipList, 8>(benchmarks);
+        createBenchmarksForListHeight<MemoryManagedLazySkipList, 16>(
+            benchmarks);
+        createBenchmarksForListHeight<MemoryManagedLazySkipList, 64>(
+            benchmarks);
+
+        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks),
+                                  "MemoryManagedLazySkipList");
     }
-    
+
     if (benchmark_enabled("LockFreeSkipList")) {
         std::cout << "Running LockFreeSkipList benchmark:" << std::endl;
-        
-        std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<LockFreeSkipList,8>(benchmarks);
-        createBenchmarksForListHeight<LockFreeSkipList,16>(benchmarks);
-        createBenchmarksForListHeight<LockFreeSkipList,64>(benchmarks);
 
-        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks), "LockFreeSkipList");
+        std::vector<BenchmarkConfiguration> benchmarks;
+        createBenchmarksForListHeight<LockFreeSkipList, 8>(benchmarks);
+        createBenchmarksForListHeight<LockFreeSkipList, 16>(benchmarks);
+        createBenchmarksForListHeight<LockFreeSkipList, 64>(benchmarks);
+
+        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks),
+                                  "LockFreeSkipList");
     }
 
     return EXIT_SUCCESS;
