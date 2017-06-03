@@ -31,7 +31,7 @@ class LazySkipList final : public SkipList<T>
             , height(height)
         {
         }
-
+        
         ~Node()
         {
             
@@ -54,6 +54,16 @@ class LazySkipList final : public SkipList<T>
         , m_size(0)
     {
         m_head->next.fill(m_sentinel); // connect head with sentinel
+        m_sentinel->next.fill(nullptr);
+    }
+    
+    ~LazySkipList() override
+    {
+        for (auto* current = m_head; current != nullptr;) {
+            auto* next = current->next[0];
+            delete current;
+            current = next;
+        }
     }
 
     bool empty() override
