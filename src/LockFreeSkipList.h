@@ -32,11 +32,14 @@ class LockFreeSkipList final : public SkipList<T>
             , height(height)
         {
             next.fill(nullptr);
+            for (std::uint16_t level = 0; level <= height; ++level) {
+                next[level] = new AtomicMarkableReference<Node>(nullptr, false);
+            }
         }
 
         ~Node()
         {
-            for (std::uint16_t level = 0; level <= MaximumHeight - 1; ++level) {
+            for (std::uint16_t level = 0; level <= height; ++level) {
                 delete next[level];
             }
         }
@@ -49,16 +52,13 @@ class LockFreeSkipList final : public SkipList<T>
   public:
     LockFreeSkipList()
         : m_head(
-              new Node(std::numeric_limits<value_type>::min(), MaximumHeight))
+              new Node(std::numeric_limits<value_type>::min(), MaximumHeight - 1))
         , m_sentinel(
-              new Node(std::numeric_limits<value_type>::max(), MaximumHeight))
+              new Node(std::numeric_limits<value_type>::max(), MaximumHeight - 1))
         , m_size(0)
     {
         for (std::uint16_t level = 0; level <= MaximumHeight - 1; ++level) {
-            m_head->next[level] =
-                new AtomicMarkableReference<Node>(m_sentinel, false);
-            m_sentinel->next[level] =
-                new AtomicMarkableReference<Node>(nullptr, false);
+            m_head->next[level]->set(m_sentinel, false);
         }
     }
 
@@ -103,8 +103,7 @@ class LockFreeSkipList final : public SkipList<T>
             Node* newNode = new Node(value, topLevel);
             for (std::uint16_t level = 0; level <= topLevel; ++level) {
                 Node* succ = successors[level];
-                newNode->next[level] =
-                    new AtomicMarkableReference<Node>(succ, false);
+                newNode->next[level]->set(succ, false);
             }
 
             // set bottom predecessor
