@@ -15,6 +15,7 @@ std::ostream& operator<<(std::ostream& out,
                          const BenchmarkConfiguration& config)
 {
     out << "Description: " << config.description
+        << "\nRepetitions: " << std::to_string(config.repetitions)
         << "\nSkip-List height: " << std::to_string(config.listHeight)
         << "\nNumber of threads: " << std::to_string(config.numberOfThreads)
         << "\nNumber of items: " << std::to_string(config.numberOfItems)
@@ -61,33 +62,52 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
         list->insert(i);
     }
 
-    std::chrono::nanoseconds benchmarkDuration;
-    SkipListStatistics statistics;
-
     boost::barrier barrier(config.numberOfThreads);
+
+    // collect data of each repetition
+    struct RepetitionData {
+        std::chrono::nanoseconds duration;
+        SkipListStatistics statistics;
+    };
+    std::vector<RepetitionData> repData(config.repetitions);
 
     Thread::parallel(
         [&] {
-            SkipListStatistics::threadLocalInstance().reset();
-
             Timer<std::chrono::high_resolution_clock> timer;
 
-            barrier.wait();
-            timer.start();
+            for (std::uint16_t i = 0; i < config.repetitions; i++) {
+                RepetitionData& data = repData[i];
 
-            config.workStrategy(config, *list);
+                SkipListStatistics::threadLocalInstance().reset();
 
-            barrier.wait();
-            timer.stop();
+                barrier.wait();
+                timer.start();
 
-            Thread::single([&] { benchmarkDuration = timer.elapsed(); });
+                config.workStrategy(config, *list);
 
-            // merge the collected performance statistics of each thread
-            Thread::critical([&] {
-                SkipListStatistics::threadLocalInstance().mergeInto(statistics);
-            });
+                barrier.wait();
+                timer.stop();
+
+                Thread::single([&] { data.duration = timer.elapsed(); });
+
+                // merge the collected performance statistics of each thread
+                Thread::critical([&] {
+                    SkipListStatistics::threadLocalInstance().mergeInto(
+                        data.statistics);
+                });
+            }
         },
         config.numberOfThreads);
+
+    // search the repetition with the biggest duration
+    const auto maxRep = std::max_element(
+        repData.cbegin(), repData.cend(),
+        [](const RepetitionData& lhs, const RepetitionData& rhs) {
+            return lhs.duration < rhs.duration;
+        });
+
+    const auto benchmarkDuration = maxRep->duration;
+    const auto statistics = maxRep->statistics;
 
     BenchmarkResult result;
     result.totalTime = benchmarkDuration.count() / 1000.0 / 1000.0 / 1000.0;

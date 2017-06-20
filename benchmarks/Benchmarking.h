@@ -9,6 +9,7 @@
 #include "SkipList.h"
 
 struct BenchmarkConfiguration {
+    std::uint16_t repetitions;
     std::uint16_t listHeight;
     std::string description;
     std::size_t numberOfThreads;

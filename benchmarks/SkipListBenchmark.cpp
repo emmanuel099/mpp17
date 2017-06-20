@@ -16,6 +16,7 @@ static void
 createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
 {
     BenchmarkConfiguration benchmarkTemplate;
+    benchmarkTemplate.repetitions = 5;
     benchmarkTemplate.listHeight = SkipListHeight;
     benchmarkTemplate.numberOfItems = 250000;
     benchmarkTemplate.initialNumberOfItems = 10000;
