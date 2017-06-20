@@ -51,10 +51,10 @@ class LockFreeSkipList final : public SkipList<T>
 
   public:
     LockFreeSkipList()
-        : m_head(
-              new Node(std::numeric_limits<value_type>::min(), MaximumHeight - 1))
-        , m_sentinel(
-              new Node(std::numeric_limits<value_type>::max(), MaximumHeight - 1))
+        : m_head(new Node(std::numeric_limits<value_type>::min(),
+                          MaximumHeight - 1))
+        , m_sentinel(new Node(std::numeric_limits<value_type>::max(),
+                              MaximumHeight - 1))
         , m_size(0)
     {
         for (std::uint16_t level = 0; level <= MaximumHeight - 1; ++level) {
