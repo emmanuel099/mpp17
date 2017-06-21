@@ -139,13 +139,30 @@ Workload createInterleavingRemoveWorkload()
     return {&RemoveWorkloadPrepare, InterleavingRemove, &DefaultCleanup};
 }
 
+static thread_local std::vector<long> tl_randomNumbers;
+
 Workload createMixedWorkload(double insertingThreads, double removingThreads)
 {
     assert(insertingThreads >= 0.0);
     assert(removingThreads >= 0.0);
     assert((insertingThreads + removingThreads) <= 1.0);
 
-    const auto MixedWork = [insertingThreads, removingThreads](
+    const auto Prepare = [](const BaseBenchmarkConfiguration& config,
+                            SkipList<long>& list) {
+        DefaultPrepare(config, list);
+
+        std::random_device randomDevice;
+        std::mt19937 generator(randomDevice());
+        std::uniform_int_distribution<> distribution(
+            0, config.initialNumberOfItems + config.numberOfItems);
+
+        tl_randomNumbers.reserve(config.numberOfItems);
+        for (std::size_t i = 0; i < config.numberOfItems; i++) {
+            tl_randomNumbers.emplace_back(distribution(generator));
+        }
+    };
+
+    const auto Work = [insertingThreads, removingThreads](
         const BaseBenchmarkConfiguration& config, SkipList<long>& list) {
         //  0 insert RT removing ST searching
         //  [ ...... | .......... | ........ [
@@ -156,26 +173,28 @@ Workload createMixedWorkload(double insertingThreads, double removingThreads)
 
         const auto threadId = Thread::currentThreadId();
 
-        std::random_device randomDevice;
-        static thread_local std::mt19937 generator(randomDevice());
-        std::uniform_int_distribution<> distribution(
-            0, config.initialNumberOfItems + config.numberOfItems);
-
         if (threadId >= ST) { // searching
             for (std::size_t i = 0; i < config.numberOfItems; i++) {
-                list.contains(distribution(generator));
+                list.contains(tl_randomNumbers[i]);
             }
         } else if (threadId >= RT) { // removing
             for (std::size_t i = 0; i < config.numberOfItems; i++) {
-                list.remove(distribution(generator));
+                list.remove(tl_randomNumbers[i]);
             }
         } else { // inserting
             for (std::size_t i = 0; i < config.numberOfItems; i++) {
-                list.insert(distribution(generator));
+                list.insert(tl_randomNumbers[i]);
             }
         }
     };
 
-    return {&DefaultPrepare, MixedWork, &DefaultCleanup};
+    const auto Cleanup = [](const BaseBenchmarkConfiguration& config,
+                            SkipList<long>& list) {
+        DefaultCleanup(config, list);
+
+        tl_randomNumbers.clear();
+    };
+
+    return {Prepare, Work, Cleanup};
 }
 }
