@@ -60,15 +60,15 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
         },
         config.numberOfThreads);
 
-    // search the repetition with the biggest duration
-    const auto maxRep = std::max_element(
+    // search the repetition with the smallest duration
+    const auto selectedRepetition = std::min_element(
         repData.cbegin(), repData.cend(),
         [](const RepetitionData& lhs, const RepetitionData& rhs) {
             return lhs.duration < rhs.duration;
         });
 
-    const auto benchmarkDuration = maxRep->duration;
-    const auto statistics = maxRep->statistics;
+    const auto benchmarkDuration = selectedRepetition->duration;
+    const auto statistics = selectedRepetition->statistics;
 
     BenchmarkResult result;
     result.totalTime = benchmarkDuration.count() / 1000.0 / 1000.0 / 1000.0;
