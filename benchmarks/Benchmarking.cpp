@@ -11,56 +11,9 @@
 #include "Thread.h"
 #include "Timer.h"
 
-std::ostream& operator<<(std::ostream& out,
-                         const BenchmarkConfiguration& config)
-{
-    out << "Description: " << config.description
-        << "\nRepetitions: " << std::to_string(config.repetitions)
-        << "\nSkip-List height: " << std::to_string(config.listHeight)
-        << "\nNumber of threads: " << std::to_string(config.numberOfThreads)
-        << "\nNumber of items: " << std::to_string(config.numberOfItems)
-        << "\nInitial number of items: "
-        << std::to_string(config.initialNumberOfItems);
-
-    return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const BenchmarkResult& result)
-{
-    out << "Total time: " << std::to_string(result.totalTime) << " s"
-        << "\nTotal throughput: " << std::to_string(result.totalThroughput)
-        << " Ops/s"
-        << "\nInsertions: " << std::to_string(result.numberOfInsertions)
-        << "\nFailed Insertions: "
-        << std::to_string(result.percentageFailedInsert) << " %"
-        << "\nAvr. No. Retries during Insert: "
-        << std::to_string(result.averageNumberOfRetriesDuringInsert)
-        << "\nInsert throughput: " << std::to_string(result.insertThroughput)
-        << " Ops/s"
-        << "\nRemovals: " << std::to_string(result.numberOfRemovals)
-        << "\nFailed Removals: "
-        << std::to_string(result.percentageFailedRemove) << " %"
-        << "\nAvr. No. Retries during Remove: "
-        << std::to_string(result.averageNumberOfRetriesDuringRemove)
-        << "\nRemove throughput: " << std::to_string(result.removeThroughput)
-        << " Ops/s"
-        << "\nFind: " << std::to_string(result.numberOfFinds)
-        << "\nAvr. No. Retries during Find: "
-        << std::to_string(result.averageNumberOfRetriesDuringFind)
-        << "\nFind throughput: " << std::to_string(result.findThroughput)
-        << " Ops/s";
-
-    return out;
-}
-
 BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
 {
-    const auto list = config.listFactory();
-
-    // pre-fill list
-    for (long i = 0; i < config.initialNumberOfItems; i++) {
-        list->insert(i);
-    }
+    const auto workStrategy = config.workStrategy;
 
     boost::barrier barrier(config.numberOfThreads);
 
@@ -71,6 +24,8 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
     };
     std::vector<RepetitionData> repData(config.repetitions);
 
+    std::unique_ptr<SkipList<long>> list;
+
     Thread::parallel(
         [&] {
             Timer<std::chrono::high_resolution_clock> timer;
@@ -78,12 +33,16 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
             for (std::uint16_t i = 0; i < config.repetitions; i++) {
                 RepetitionData& data = repData[i];
 
+                Thread::single([&] { list = config.listFactory(); });
+
+                workStrategy.prepare(config, *list);
+
                 SkipListStatistics::threadLocalInstance().reset();
 
                 barrier.wait();
                 timer.start();
 
-                config.workStrategy(config, *list);
+                workStrategy.work(config, *list);
 
                 barrier.wait();
                 timer.stop();
@@ -95,6 +54,8 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
                     SkipListStatistics::threadLocalInstance().mergeInto(
                         data.statistics);
                 });
+
+                workStrategy.cleanup(config, *list);
             }
         },
         config.numberOfThreads);

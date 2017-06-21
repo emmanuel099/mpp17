@@ -24,55 +24,54 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
         return std::make_unique<T<long, SkipListHeight>>();
     };
 
-    for (std::size_t threads = 1;
-         threads <= std::thread::hardware_concurrency(); threads *= 2) {
+    for (std::size_t threads = 1; threads <= 1; threads *= 2) {
         benchmarkTemplate.numberOfThreads = threads;
 
         {
-            BenchmarkConfiguration benchmark = benchmarkTemplate;
+            auto benchmark = benchmarkTemplate;
             benchmark.description = "ascending insert - no failed inserts";
-            benchmark.workStrategy = WorkStrategy::AscendingInsert;
+            benchmark.workStrategy =
+                WorkStrategy::createAscendingInsertWorkload();
             benchmarks.push_back(benchmark);
         }
 
         {
-            BenchmarkConfiguration benchmark = benchmarkTemplate;
+            auto benchmark = benchmarkTemplate;
             benchmark.description = "descending insert - no failed inserts";
-            benchmark.workStrategy = WorkStrategy::DescendingInsert;
+            benchmark.workStrategy =
+                WorkStrategy::createDescendingInsertWorkload();
             benchmarks.push_back(benchmark);
         }
 
         {
-            BenchmarkConfiguration benchmark = benchmarkTemplate;
+            auto benchmark = benchmarkTemplate;
             benchmark.description = "interleaving insert - no failed inserts";
-            benchmark.workStrategy = WorkStrategy::InterleavingInsert;
+            benchmark.workStrategy =
+                WorkStrategy::createInterleavingInsertWorkload();
             benchmarks.push_back(benchmark);
         }
 
         {
-            BenchmarkConfiguration benchmark = benchmarkTemplate;
+            auto benchmark = benchmarkTemplate;
             benchmark.description = "ascending remove - no failed removes";
-            benchmark.initialNumberOfItems =
-                benchmark.numberOfThreads * benchmark.numberOfItems;
-            benchmark.workStrategy = WorkStrategy::AscendingRemove;
+            benchmark.workStrategy =
+                WorkStrategy::createAscendingRemoveWorkload();
             benchmarks.push_back(benchmark);
         }
 
         {
-            BenchmarkConfiguration benchmark = benchmarkTemplate;
+            auto benchmark = benchmarkTemplate;
             benchmark.description = "descending remove - no failed removes";
-            benchmark.initialNumberOfItems =
-                benchmark.numberOfThreads * benchmark.numberOfItems;
-            benchmark.workStrategy = WorkStrategy::DescendingRemove;
+            benchmark.workStrategy =
+                WorkStrategy::createDescendingRemoveWorkload();
             benchmarks.push_back(benchmark);
         }
 
         {
-            BenchmarkConfiguration benchmark = benchmarkTemplate;
+            auto benchmark = benchmarkTemplate;
             benchmark.description = "interleaving remove - no failed removes";
-            benchmark.initialNumberOfItems =
-                benchmark.numberOfThreads * benchmark.numberOfItems;
-            benchmark.workStrategy = WorkStrategy::InterleavingRemove;
+            benchmark.workStrategy =
+                WorkStrategy::createInterleavingRemoveWorkload();
             benchmarks.push_back(benchmark);
         }
     }

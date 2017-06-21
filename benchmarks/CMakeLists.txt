@@ -2,6 +2,8 @@ include_directories (${SkipList_SOURCE_DIR}/src)
 
 add_library(benchmarkcore STATIC
     Benchmarking.cpp
+    BaseBenchmarkConfiguration.cpp
+    BenchmarkResult.cpp
     Thread.cpp
     WorkStrategy.cpp
 )
