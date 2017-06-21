@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "Benchmarking.h"
