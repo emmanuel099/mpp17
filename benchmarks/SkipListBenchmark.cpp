@@ -24,7 +24,8 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
         return std::make_unique<T<long, SkipListHeight>>();
     };
 
-    for (std::size_t threads = 1; threads <= 1; threads *= 2) {
+    for (std::size_t threads = 1;
+         threads <= std::thread::hardware_concurrency(); threads *= 2) {
         benchmarkTemplate.numberOfThreads = threads;
 
         {
@@ -72,6 +73,14 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
             benchmark.description = "interleaving remove - no failed removes";
             benchmark.workStrategy =
                 WorkStrategy::createInterleavingRemoveWorkload();
+            benchmarks.push_back(benchmark);
+        }
+
+        {
+            auto benchmark = benchmarkTemplate;
+            benchmark.description = "mixed workload - 70% insert, 30% remove";
+            benchmark.workStrategy =
+                WorkStrategy::createMixedWorkload(0.7, 0.3);
             benchmarks.push_back(benchmark);
         }
     }
