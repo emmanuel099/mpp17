@@ -3,6 +3,7 @@
 #include <thread>
 #include <vector>
 
+#include "MMLockFreeSkipList.h"
 #include "LockFreeSkipList.h"
 
 class LockFreeSkipListTest : public ::testing::Test
@@ -10,11 +11,12 @@ class LockFreeSkipListTest : public ::testing::Test
   protected:
     void SetUp() override
     {
-        list = std::make_unique<LockFreeSkipList<int, 16>>();
+        list = std::make_unique<MMLockFreeSkipList<int, 16>>();
     }
 
     std::unique_ptr<SkipList<int>> list;
 };
+
 
 TEST_F(LockFreeSkipListTest, InsertingMultipleElementsInParallelShouldWork)
 {
