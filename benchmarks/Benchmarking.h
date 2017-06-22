@@ -16,12 +16,15 @@ struct BenchmarkConfiguration : public BaseBenchmarkConfiguration {
     WorkStrategy::Workload workStrategy;
 };
 
-BenchmarkResult runBenchmark(const BenchmarkConfiguration& config);
+struct BenchmarkData {
+    BenchmarkConfiguration config;
+    std::vector<BenchmarkResult> results; // one result per repetition
+};
 
-std::vector<BenchmarkResult>
+BenchmarkData runBenchmark(const BenchmarkConfiguration& config);
+
+std::vector<BenchmarkData>
 runBenchmarks(const std::vector<BenchmarkConfiguration>& configs);
 
-void saveBenchmarkResultsAsCsv(
-    const std::vector<BenchmarkConfiguration>& configs,
-    const std::vector<BenchmarkResult>& results,
-    const std::string& fileNamePrefix);
+void saveBenchmarksAsCsv(const std::vector<BenchmarkData>& benchmarks,
+                         const std::string& fileNamePrefix);

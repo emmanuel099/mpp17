@@ -4,7 +4,8 @@
 
 std::ostream& operator<<(std::ostream& out, const BenchmarkResult& result)
 {
-    out << "Total time: " << std::to_string(result.totalTime) << " s"
+    out << "Repetition: " << std::to_string(result.repetition)
+        << "\nTotal time: " << std::to_string(result.totalTime) << " s"
         << "\nTotal throughput: " << std::to_string(result.totalThroughput)
         << " Ops/s"
         << "\nInsertions: " << std::to_string(result.numberOfInsertions)

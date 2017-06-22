@@ -103,8 +103,7 @@ int main(int argc, char** argv)
         createBenchmarksForListHeight<ConcurrentSkipList, 16>(benchmarks);
         createBenchmarksForListHeight<ConcurrentSkipList, 64>(benchmarks);
 
-        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks),
-                                  "ConcurrentSkipList");
+        saveBenchmarksAsCsv(runBenchmarks(benchmarks), "ConcurrentSkipList");
     }
 
     if (benchmark_enabled("LazySkipList")) {
@@ -115,8 +114,7 @@ int main(int argc, char** argv)
         createBenchmarksForListHeight<LazySkipList, 16>(benchmarks);
         createBenchmarksForListHeight<LazySkipList, 64>(benchmarks);
 
-        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks),
-                                  "LazySkipList");
+        saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LazySkipList");
     }
 
     if (benchmark_enabled("MemoryManagedLazySkipList")) {
@@ -130,8 +128,8 @@ int main(int argc, char** argv)
         createBenchmarksForListHeight<MemoryManagedLazySkipList, 64>(
             benchmarks);
 
-        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks),
-                                  "MemoryManagedLazySkipList");
+        saveBenchmarksAsCsv(runBenchmarks(benchmarks),
+                            "MemoryManagedLazySkipList");
     }
 
     if (benchmark_enabled("LockFreeSkipList")) {
@@ -142,8 +140,7 @@ int main(int argc, char** argv)
         createBenchmarksForListHeight<LockFreeSkipList, 16>(benchmarks);
         createBenchmarksForListHeight<LockFreeSkipList, 64>(benchmarks);
 
-        saveBenchmarkResultsAsCsv(benchmarks, runBenchmarks(benchmarks),
-                                  "LockFreeSkipList");
+        saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LockFreeSkipList");
     }
 
     return EXIT_SUCCESS;

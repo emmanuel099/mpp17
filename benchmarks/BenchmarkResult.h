@@ -4,6 +4,7 @@
 #include <string>
 
 struct BenchmarkResult {
+    std::uint16_t repetition;
     double totalTime;       // s
     double totalThroughput; // per s
     std::size_t numberOfInsertions;

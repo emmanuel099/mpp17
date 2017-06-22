@@ -11,7 +11,7 @@
 #include "Thread.h"
 #include "Timer.h"
 
-BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
+BenchmarkData runBenchmark(const BenchmarkConfiguration& config)
 {
     const auto workStrategy = config.workStrategy;
 
@@ -19,6 +19,7 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
 
     // collect data of each repetition
     struct RepetitionData {
+        std::uint16_t repetition;
         std::chrono::nanoseconds duration;
         SkipListStatistics statistics;
     };
@@ -34,7 +35,6 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
                 RepetitionData& data = repData[i];
 
                 Thread::single([&] { list = config.listFactory(); });
-
                 workStrategy.prepare(config, *list);
 
                 SkipListStatistics::threadLocalInstance().reset();
@@ -47,7 +47,10 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
                 barrier.wait();
                 timer.stop();
 
-                Thread::single([&] { data.duration = timer.elapsed(); });
+                Thread::single([&] {
+                    data.repetition = i + 1;
+                    data.duration = timer.elapsed();
+                });
 
                 // merge the collected performance statistics of each thread
                 Thread::critical([&] {
@@ -60,45 +63,47 @@ BenchmarkResult runBenchmark(const BenchmarkConfiguration& config)
         },
         config.numberOfThreads);
 
-    // search the repetition with the smallest duration
-    const auto selectedRepetition = std::min_element(
-        repData.cbegin(), repData.cend(),
-        [](const RepetitionData& lhs, const RepetitionData& rhs) {
-            return lhs.duration < rhs.duration;
-        });
+    // post-compute the collected data
+    BenchmarkData benchmarkData;
+    benchmarkData.config = config;
+    for (const auto& rep : repData) {
+        const auto& statistics = rep.statistics;
 
-    const auto benchmarkDuration = selectedRepetition->duration;
-    const auto statistics = selectedRepetition->statistics;
+        BenchmarkResult result;
+        result.repetition = rep.repetition;
+        result.totalTime = rep.duration.count() / 1000.0 / 1000.0 / 1000.0;
+        result.totalThroughput =
+            (statistics.numberOfInserts() + statistics.numberOfDeletions() +
+             statistics.numberOfLookups()) /
+            result.totalTime;
+        result.numberOfInsertions = statistics.numberOfInserts();
+        result.percentageFailedInsert = statistics.percentageFailedInserts();
+        result.averageNumberOfRetriesDuringInsert =
+            statistics.averageNumberOfRetriesDuringInsert();
+        result.insertThroughput = result.numberOfInsertions / result.totalTime;
+        result.numberOfRemovals = statistics.numberOfDeletions();
+        result.percentageFailedRemove = statistics.percentageFailedDeletions();
+        result.averageNumberOfRetriesDuringRemove =
+            statistics.averageNumberOfRetriesDuringDeletion();
+        result.removeThroughput = result.numberOfRemovals / result.totalTime;
+        result.numberOfFinds = statistics.numberOfLookups();
+        result.averageNumberOfRetriesDuringFind =
+            statistics.averageNumberOfRetriesDuringLookup();
+        result.findThroughput = result.numberOfFinds / result.totalTime;
 
-    BenchmarkResult result;
-    result.totalTime = benchmarkDuration.count() / 1000.0 / 1000.0 / 1000.0;
-    result.totalThroughput =
-        (statistics.numberOfInserts() + statistics.numberOfDeletions() +
-         statistics.numberOfLookups()) /
-        result.totalTime;
-    result.numberOfInsertions = statistics.numberOfInserts();
-    result.percentageFailedInsert = statistics.percentageFailedInserts();
-    result.averageNumberOfRetriesDuringInsert =
-        statistics.averageNumberOfRetriesDuringInsert();
-    result.insertThroughput = result.numberOfInsertions / result.totalTime;
-    result.numberOfRemovals = statistics.numberOfDeletions();
-    result.percentageFailedRemove = statistics.percentageFailedDeletions();
-    result.averageNumberOfRetriesDuringRemove =
-        statistics.averageNumberOfRetriesDuringDeletion();
-    result.removeThroughput = result.numberOfRemovals / result.totalTime;
-    result.numberOfFinds = statistics.numberOfLookups();
-    result.averageNumberOfRetriesDuringFind =
-        statistics.averageNumberOfRetriesDuringLookup();
-    result.findThroughput = result.numberOfFinds / result.totalTime;
+        benchmarkData.results.push_back(result);
+    }
 
-    return result;
+    return benchmarkData;
 }
 
-std::vector<BenchmarkResult>
+std::vector<BenchmarkData>
 runBenchmarks(const std::vector<BenchmarkConfiguration>& configs)
 {
-    std::vector<BenchmarkResult> results;
+    std::vector<BenchmarkData> results;
     results.reserve(configs.size());
+
+    Timer<std::chrono::steady_clock> timer;
 
     std::size_t counter = 0;
     const auto totalNumberStr = std::to_string(configs.size());
@@ -111,14 +116,18 @@ runBenchmarks(const std::vector<BenchmarkConfiguration>& configs)
                   << "--------------------------------------------"
                   << std::endl;
 
+        timer.start();
         const auto result = runBenchmark(config);
-        results.push_back(result);
+        timer.stop();
 
-        std::cout << "[" << std::to_string(counter) << "/" << totalNumberStr
-                  << "] Finished benchmark, result is:\n"
-                  << result << "\n"
+        std::cout << "Finished benchmark after "
+                  << std::to_string(timer.elapsed().count() / 1000.0 / 1000.0 /
+                                    1000.0)
+                  << " seconds\n"
                   << "============================================"
                   << std::endl;
+
+        results.push_back(result);
     }
 
     return results;
@@ -134,10 +143,8 @@ static std::string currentDateTimeStr()
     return ss.str();
 }
 
-void saveBenchmarkResultsAsCsv(
-    const std::vector<BenchmarkConfiguration>& configs,
-    const std::vector<BenchmarkResult>& results,
-    const std::string& fileNamePrefix)
+void saveBenchmarksAsCsv(const std::vector<BenchmarkData>& benchmarks,
+                         const std::string& fileNamePrefix)
 {
     const auto seperator = ";";
 
@@ -153,7 +160,8 @@ void saveBenchmarkResultsAsCsv(
 
     const auto dumpResult = [&](std::ostream& out,
                                 const BenchmarkResult& result) {
-        out << std::to_string(result.totalTime) << seperator
+        out << std::to_string(result.repetition) << seperator
+            << std::to_string(result.totalTime) << seperator
             << std::to_string(result.totalThroughput) << seperator
             << std::to_string(result.numberOfInsertions) << seperator
             << std::to_string(result.percentageFailedInsert) << seperator
@@ -174,10 +182,12 @@ void saveBenchmarkResultsAsCsv(
         fileNamePrefix + "_" + hostname + "_" + currentDateTimeStr() + ".csv";
 
     std::ofstream file(fileName, std::ofstream::trunc);
-    for (std::size_t i = 0; i < configs.size(); i++) {
-        dumpConfig(file, configs.at(i));
-        dumpResult(file, results.at(i));
-        file << "\n";
+    for (const auto& benchmark : benchmarks) {
+        for (const auto& result : benchmark.results) {
+            dumpConfig(file, benchmark.config);
+            dumpResult(file, result);
+            file << "\n";
+        }
     }
     file.close();
 
