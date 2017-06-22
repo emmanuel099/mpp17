@@ -8,7 +8,7 @@
 #include "ConcurrentSkipList.h"
 #include "LazySkipList.h"
 #include "LockFreeSkipList.h"
-#include "MemoryManagedLazySkipList.h"
+#include "MMLazySkipList.h"
 #include "WorkStrategy.h"
 
 template <template <typename, std::uint16_t> class T,
@@ -117,19 +117,19 @@ int main(int argc, char** argv)
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LazySkipList");
     }
 
-    if (benchmark_enabled("MemoryManagedLazySkipList")) {
-        std::cout << "Running MemoryManagedLazySkipList benchmark:"
+    if (benchmark_enabled("MMLazySkipList")) {
+        std::cout << "Running MMLazySkipList benchmark:"
                   << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<MemoryManagedLazySkipList, 8>(benchmarks);
-        createBenchmarksForListHeight<MemoryManagedLazySkipList, 16>(
+        createBenchmarksForListHeight<MMLazySkipList, 8>(benchmarks);
+        createBenchmarksForListHeight<MMLazySkipList, 16>(
             benchmarks);
-        createBenchmarksForListHeight<MemoryManagedLazySkipList, 64>(
+        createBenchmarksForListHeight<MMLazySkipList, 64>(
             benchmarks);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks),
-                            "MemoryManagedLazySkipList");
+                            "MMLazySkipList");
     }
 
     if (benchmark_enabled("LockFreeSkipList")) {

@@ -11,7 +11,7 @@
 #include "SkipListStatistics.h"
 
 template <typename T, std::uint16_t MaximumHeight>
-class MemoryManagedLazySkipList final : public SkipList<T>
+class MMLazySkipList final : public SkipList<T>
 {
   public:
     static_assert(MaximumHeight > 0, "Maximum height must be greater than 0");
@@ -48,7 +48,7 @@ class MemoryManagedLazySkipList final : public SkipList<T>
     };
 
   public:
-    MemoryManagedLazySkipList()
+    MMLazySkipList()
         : m_head(std::make_shared<Node>(std::numeric_limits<value_type>::min(),
                                         MaximumHeight))
         , m_sentinel(std::make_shared<Node>(
