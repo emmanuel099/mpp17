@@ -9,6 +9,7 @@
 #include "LazySkipList.h"
 #include "LockFreeSkipList.h"
 #include "MMLazySkipList.h"
+#include "MMLockFreeSkipList.h"
 #include "WorkStrategy.h"
 
 template <template <typename, std::uint16_t> class T,
@@ -141,6 +142,17 @@ int main(int argc, char** argv)
         createBenchmarksForListHeight<LockFreeSkipList, 64>(benchmarks);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LockFreeSkipList");
+    }
+    
+    if (benchmark_enabled("MMLockFreeSkipList")) {
+        std::cout << "Running MMLockFreeSkipList benchmark:" << std::endl;
+
+        std::vector<BenchmarkConfiguration> benchmarks;
+        createBenchmarksForListHeight<MMLockFreeSkipList, 8>(benchmarks);
+        createBenchmarksForListHeight<MMLockFreeSkipList, 16>(benchmarks);
+        createBenchmarksForListHeight<MMLockFreeSkipList, 64>(benchmarks);
+
+        saveBenchmarksAsCsv(runBenchmarks(benchmarks), "MMLockFreeSkipList");
     }
 
     return EXIT_SUCCESS;
