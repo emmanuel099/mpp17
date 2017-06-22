@@ -31,22 +31,11 @@ class LockFreeSkipList final : public SkipList<T>
             : value(value)
             , height(height)
         {
-            next.fill(nullptr);
-            for (std::uint16_t level = 0; level <= height; ++level) {
-                next[level] = new AtomicMarkableReference<Node>(nullptr, false);
-            }
-        }
-
-        ~Node()
-        {
-            for (std::uint16_t level = 0; level <= height; ++level) {
-                delete next[level];
-            }
         }
 
         const value_type value;
         const std::uint16_t height;
-        std::array<AtomicMarkableReference<Node>*, MaximumHeight> next;
+        std::array<AtomicMarkableReference<Node>, MaximumHeight> next;
     };
 
   public:
@@ -58,14 +47,14 @@ class LockFreeSkipList final : public SkipList<T>
         , m_size(0)
     {
         for (std::uint16_t level = 0; level <= MaximumHeight - 1; ++level) {
-            m_head->next[level]->set(m_sentinel, false);
+            m_head->next[level].set(m_sentinel, false);
         }
     }
 
     ~LockFreeSkipList() override
     {
         for (auto* current = m_head; current != nullptr;) {
-            auto* next = current->next[0]->getReference();
+            auto* next = current->next[0].getReference();
             delete current;
             current = next;
         }
@@ -103,13 +92,13 @@ class LockFreeSkipList final : public SkipList<T>
             Node* newNode = new Node(value, topLevel);
             for (std::uint16_t level = 0; level <= topLevel; ++level) {
                 Node* succ = successors[level];
-                newNode->next[level]->set(succ, false);
+                newNode->next[level].set(succ, false);
             }
 
             // set bottom predecessor
             Node* pred = predecessors[0];
             Node* succ = successors[0];
-            if (!pred->next[0]->compareAndSet(succ, newNode, false, false)) {
+            if (!pred->next[0].compareAndSet(succ, newNode, false, false)) {
 #ifdef COLLECT_STATISTICS
                 SkipListStatistics::threadLocalInstance().insertionRetry();
 #endif
@@ -123,8 +112,8 @@ class LockFreeSkipList final : public SkipList<T>
                 while (true) {
                     pred = predecessors[level];
                     succ = successors[level];
-                    if (pred->next[level]->compareAndSet(succ, newNode, false,
-                                                         false)) {
+                    if (pred->next[level].compareAndSet(succ, newNode, false,
+                                                        false)) {
                         break;
                     }
                     find(value, predecessors, successors);
@@ -160,20 +149,20 @@ class LockFreeSkipList final : public SkipList<T>
             Node* nodeToRemove = successors[0];
             for (std::uint16_t level = nodeToRemove->height; level >= 1;
                  --level) {
-                succ = nodeToRemove->next[level]->get(marked);
+                succ = nodeToRemove->next[level].get(marked);
                 while (!marked) {
-                    nodeToRemove->next[level]->compareAndSet(succ, succ, false,
-                                                             true);
-                    succ = nodeToRemove->next[level]->get(marked);
+                    nodeToRemove->next[level].compareAndSet(succ, succ, false,
+                                                            true);
+                    succ = nodeToRemove->next[level].get(marked);
                 }
             }
 
             // mark bottom level links
-            succ = nodeToRemove->next[0]->get(marked);
+            succ = nodeToRemove->next[0].get(marked);
             while (true) {
-                bool done = nodeToRemove->next[0]->compareAndSet(succ, succ,
-                                                                 false, true);
-                succ = successors[0]->next[0]->get(marked);
+                bool done = nodeToRemove->next[0].compareAndSet(succ, succ,
+                                                                false, true);
+                succ = successors[0]->next[0].get(marked);
                 if (done) {
 #ifdef COLLECT_STATISTICS
                     SkipListStatistics::threadLocalInstance().deletionSuccess();
@@ -203,13 +192,13 @@ class LockFreeSkipList final : public SkipList<T>
         bool marked = false;
 
         for (std::int32_t level = MaximumHeight - 1; level >= 0; --level) {
-            curr = pred->next[level]->get(marked);
+            curr = pred->next[level].get(marked);
             while (true) {
-                succ = curr->next[level]->get(marked);
+                succ = curr->next[level].get(marked);
                 // ignore marked nodes
                 while (marked) {
-                    curr = curr->next[level]->getReference();
-                    succ = curr->next[level]->get(marked);
+                    curr = curr->next[level].getReference();
+                    succ = curr->next[level].get(marked);
                 }
 
                 if (curr->value < value) {
@@ -234,22 +223,20 @@ class LockFreeSkipList final : public SkipList<T>
         bool marked = false;
 
         // mark all nodes (expect of head and sentinel)
-        for (auto* current = m_head->next[0]->getReference();
-             current != m_sentinel;
-             current = current->next[0]->getReference()) {
+        for (auto* current = m_head->next[0].getReference();
+             current != m_sentinel; current = current->next[0].getReference()) {
             for (std::int32_t level = current->height; level >= 0; --level) {
-                Node* succ = current->next[level]->get(marked);
+                Node* succ = current->next[level].get(marked);
                 while (!marked) {
-                    current->next[level]->compareAndSet(succ, succ, false,
-                                                        true);
-                    succ = current->next[level]->get(marked);
+                    current->next[level].compareAndSet(succ, succ, false, true);
+                    succ = current->next[level].get(marked);
                 }
             }
         }
 
         // fully re-connect head with sentinel
         for (std::uint16_t level = 0; level < MaximumHeight; ++level) {
-            m_head->next[level]->set(m_sentinel, false);
+            m_head->next[level].set(m_sentinel, false);
         }
 
         m_size = 0;
@@ -269,17 +256,17 @@ class LockFreeSkipList final : public SkipList<T>
         while (true) {
             pred = m_head;
             for (std::int32_t level = MaximumHeight - 1; level >= 0; --level) {
-                curr = pred->next[level]->get(marked);
+                curr = pred->next[level].get(marked);
                 while (true) {
-                    succ = curr->next[level]->get(marked);
+                    succ = curr->next[level].get(marked);
                     // link out marked nodes
                     while (marked) {
-                        if (!pred->next[level]->compareAndSet(curr, succ, false,
-                                                              false)) {
+                        if (!pred->next[level].compareAndSet(curr, succ, false,
+                                                             false)) {
                             goto retry; //?
                         }
-                        curr = pred->next[level]->getReference();
-                        succ = curr->next[level]->get(marked);
+                        curr = pred->next[level].getReference();
+                        succ = curr->next[level].get(marked);
                     }
 
                     if (curr->value < value) {
