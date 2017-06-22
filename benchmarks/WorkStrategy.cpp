@@ -23,57 +23,68 @@ static void DefaultCleanup(const BaseBenchmarkConfiguration&, SkipList<long>&)
 {
 }
 
+static long itemsPerThread(const BaseBenchmarkConfiguration& config)
+{
+    switch (config.scalingMode) {
+    case Scaling::Weak:
+        return config.numberOfItems;
+    case Scaling::Strong:
+        return config.numberOfItems / config.numberOfThreads;
+    }
+}
+
 Workload createAscendingInsertWorkload()
 {
-    const auto AscendingInsert = [](const BaseBenchmarkConfiguration& config,
-                                    SkipList<long>& list) {
+    const auto Work = [](const BaseBenchmarkConfiguration& config,
+                         SkipList<long>& list) {
         const auto threadId = Thread::currentThreadId();
 
-        const long begin =
-            threadId * config.numberOfItems + config.initialNumberOfItems;
-        const long end = begin + config.numberOfItems;
+        const auto items = itemsPerThread(config);
+        const long begin = threadId * items + config.initialNumberOfItems;
+        const long end = begin + items;
 
         for (long i = begin; i < end; i++) {
             list.insert(i);
         }
     };
 
-    return {&DefaultPrepare, AscendingInsert, &DefaultCleanup};
+    return {&DefaultPrepare, Work, &DefaultCleanup};
 }
 
 Workload createDescendingInsertWorkload()
 {
-    const auto DescendingInsert = [](const BaseBenchmarkConfiguration& config,
-                                     SkipList<long>& list) {
+    const auto Work = [](const BaseBenchmarkConfiguration& config,
+                         SkipList<long>& list) {
         const auto threadId = Thread::currentThreadId();
 
-        const long begin =
-            threadId * config.numberOfItems + config.initialNumberOfItems;
-        const long end = begin + config.numberOfItems;
+        const auto items = itemsPerThread(config);
+        const long begin = threadId * items + config.initialNumberOfItems;
+        const long end = begin + items;
 
         for (long i = end; i > begin; i--) {
             list.insert(i);
         }
     };
 
-    return {&DefaultPrepare, DescendingInsert, &DefaultCleanup};
+    return {&DefaultPrepare, Work, &DefaultCleanup};
 }
 
 Workload createInterleavingInsertWorkload()
 {
-    const auto InterleavingInsert = [](const BaseBenchmarkConfiguration& config,
-                                       SkipList<long>& list) {
+    const auto Work = [](const BaseBenchmarkConfiguration& config,
+                         SkipList<long>& list) {
         const auto threadId = Thread::currentThreadId();
-        const auto itemsPerThread = config.numberOfItems;
+
+        const auto items = itemsPerThread(config);
 
         long number = config.initialNumberOfItems + threadId;
-        for (long i = 0; i < itemsPerThread; i++) {
+        for (long i = 0; i < items; i++) {
             list.insert(number);
-            number += itemsPerThread;
+            number += items;
         }
     };
 
-    return {&DefaultPrepare, InterleavingInsert, &DefaultCleanup};
+    return {&DefaultPrepare, Work, &DefaultCleanup};
 }
 
 static void RemoveWorkloadPrepare(const BaseBenchmarkConfiguration& config,
@@ -81,7 +92,7 @@ static void RemoveWorkloadPrepare(const BaseBenchmarkConfiguration& config,
 {
     Thread::single([&] {
         const auto items = config.initialNumberOfItems +
-                           config.numberOfItems * config.numberOfThreads;
+                           itemsPerThread(config) * config.numberOfThreads;
         for (long i = 0; i < items; i++) {
             list.insert(i);
         }
@@ -90,53 +101,56 @@ static void RemoveWorkloadPrepare(const BaseBenchmarkConfiguration& config,
 
 Workload createAscendingRemoveWorkload()
 {
-    const auto AscendingRemove = [](const BaseBenchmarkConfiguration& config,
-                                    SkipList<long>& list) {
+    const auto Work = [](const BaseBenchmarkConfiguration& config,
+                         SkipList<long>& list) {
         const auto threadId = Thread::currentThreadId();
 
-        const long begin = threadId * config.numberOfItems;
-        const long end = begin + config.numberOfItems;
+        const auto items = itemsPerThread(config);
+        const long begin = threadId * items;
+        const long end = begin + items;
 
         for (long i = begin; i < end; i++) {
             list.remove(i);
         }
     };
 
-    return {&RemoveWorkloadPrepare, AscendingRemove, &DefaultCleanup};
+    return {&RemoveWorkloadPrepare, Work, &DefaultCleanup};
 }
 
 Workload createDescendingRemoveWorkload()
 {
-    const auto DescendingRemove = [](const BaseBenchmarkConfiguration& config,
-                                     SkipList<long>& list) {
+    const auto Work = [](const BaseBenchmarkConfiguration& config,
+                         SkipList<long>& list) {
         const auto threadId = Thread::currentThreadId();
 
-        const long begin = threadId * config.numberOfItems;
-        const long end = begin + config.numberOfItems;
+        const auto items = itemsPerThread(config);
+        const long begin = threadId * items;
+        const long end = begin + items;
 
         for (long i = end - 1; i >= begin; i--) {
             list.remove(i);
         }
     };
 
-    return {&RemoveWorkloadPrepare, DescendingRemove, &DefaultCleanup};
+    return {&RemoveWorkloadPrepare, Work, &DefaultCleanup};
 }
 
 Workload createInterleavingRemoveWorkload()
 {
-    const auto InterleavingRemove = [](const BaseBenchmarkConfiguration& config,
-                                       SkipList<long>& list) {
+    const auto Work = [](const BaseBenchmarkConfiguration& config,
+                         SkipList<long>& list) {
         const auto threadId = Thread::currentThreadId();
-        const auto itemsPerThread = config.numberOfItems;
+
+        const auto items = itemsPerThread(config);
 
         long number = threadId;
-        for (long i = 0; i < itemsPerThread; i++) {
+        for (long i = 0; i < items; i++) {
             list.remove(number);
-            number += itemsPerThread;
+            number += items;
         }
     };
 
-    return {&RemoveWorkloadPrepare, InterleavingRemove, &DefaultCleanup};
+    return {&RemoveWorkloadPrepare, Work, &DefaultCleanup};
 }
 
 static thread_local std::vector<long> tl_randomNumbers;
@@ -151,19 +165,21 @@ Workload createMixedWorkload(double insertingThreads, double removingThreads)
                             SkipList<long>& list) {
         DefaultPrepare(config, list);
 
+        const auto items = itemsPerThread(config);
+
         std::random_device randomDevice;
         std::mt19937 generator(randomDevice());
         std::uniform_int_distribution<> distribution(
-            0, config.initialNumberOfItems + config.numberOfItems);
+            0, config.initialNumberOfItems + items);
 
-        tl_randomNumbers.reserve(config.numberOfItems);
-        for (std::size_t i = 0; i < config.numberOfItems; i++) {
+        tl_randomNumbers.reserve(items);
+        for (std::size_t i = 0; i < items; i++) {
             tl_randomNumbers.emplace_back(distribution(generator));
         }
     };
 
-    const auto Work = [insertingThreads, removingThreads](
-        const BaseBenchmarkConfiguration& config, SkipList<long>& list) {
+    const auto Work = [=](const BaseBenchmarkConfiguration& config,
+                          SkipList<long>& list) {
         //  0 insert RT removing ST searching
         //  [ ...... | .......... | ........ [
         const std::size_t RT =
@@ -173,16 +189,18 @@ Workload createMixedWorkload(double insertingThreads, double removingThreads)
 
         const auto threadId = Thread::currentThreadId();
 
+        const auto items = itemsPerThread(config);
+
         if (threadId >= ST) { // searching
-            for (std::size_t i = 0; i < config.numberOfItems; i++) {
+            for (std::size_t i = 0; i < items; i++) {
                 list.contains(tl_randomNumbers[i]);
             }
         } else if (threadId >= RT) { // removing
-            for (std::size_t i = 0; i < config.numberOfItems; i++) {
+            for (std::size_t i = 0; i < items; i++) {
                 list.remove(tl_randomNumbers[i]);
             }
         } else { // inserting
-            for (std::size_t i = 0; i < config.numberOfItems; i++) {
+            for (std::size_t i = 0; i < items; i++) {
                 list.insert(tl_randomNumbers[i]);
             }
         }

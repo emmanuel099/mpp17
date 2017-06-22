@@ -21,6 +21,7 @@ createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
     benchmarkTemplate.listHeight = SkipListHeight;
     benchmarkTemplate.numberOfItems = 250000;
     benchmarkTemplate.initialNumberOfItems = 10000;
+    benchmarkTemplate.scalingMode = Scaling::Strong;
     benchmarkTemplate.listFactory = [] {
         return std::make_unique<T<long, SkipListHeight>>();
     };

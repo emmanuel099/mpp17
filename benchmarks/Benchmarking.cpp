@@ -147,7 +147,8 @@ void saveBenchmarkResultsAsCsv(
             << std::to_string(config.listHeight) << seperator
             << std::to_string(config.numberOfThreads) << seperator
             << std::to_string(config.numberOfItems) << seperator
-            << std::to_string(config.initialNumberOfItems) << seperator;
+            << std::to_string(config.initialNumberOfItems) << seperator
+            << config.scalingMode << seperator;
     };
 
     const auto dumpResult = [&](std::ostream& out,
