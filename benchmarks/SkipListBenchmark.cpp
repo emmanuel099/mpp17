@@ -10,81 +10,96 @@
 #include "LockFreeSkipList.h"
 #include "MMLazySkipList.h"
 #include "MMLockFreeSkipList.h"
+#include "SequentialSkipList.h"
 #include "WorkStrategy.h"
 
 template <template <typename, std::uint16_t> class T,
           std::uint16_t SkipListHeight>
-static void
-createBenchmarksForListHeight(std::vector<BenchmarkConfiguration>& benchmarks)
+static void createBenchmarks(std::vector<BenchmarkConfiguration>& benchmarks,
+                             const std::vector<Scaling>& scalingModes,
+                             const std::vector<std::size_t>& threadCounts,
+                             const std::vector<std::size_t>& initialSizes)
 {
     BenchmarkConfiguration benchmarkTemplate;
-    benchmarkTemplate.repetitions = 5;
+    benchmarkTemplate.repetitions = 30;
     benchmarkTemplate.listHeight = SkipListHeight;
     benchmarkTemplate.numberOfItems = 250000;
-    benchmarkTemplate.initialNumberOfItems = 10000;
-    benchmarkTemplate.scalingMode = Scaling::Strong;
     benchmarkTemplate.listFactory = [] {
         return std::make_unique<T<long, SkipListHeight>>();
     };
 
-    for (std::size_t threads = 1;
-         threads <= std::thread::hardware_concurrency(); threads *= 2) {
-        benchmarkTemplate.numberOfThreads = threads;
+    for (auto initialSize : initialSizes) {
+        benchmarkTemplate.initialNumberOfItems = initialSize;
 
-        {
-            auto benchmark = benchmarkTemplate;
-            benchmark.description = "ascending insert - no failed inserts";
-            benchmark.workStrategy =
-                WorkStrategy::createAscendingInsertWorkload();
-            benchmarks.push_back(benchmark);
-        }
+        for (auto scalingMode : scalingModes) {
+            benchmarkTemplate.scalingMode = scalingMode;
 
-        {
-            auto benchmark = benchmarkTemplate;
-            benchmark.description = "descending insert - no failed inserts";
-            benchmark.workStrategy =
-                WorkStrategy::createDescendingInsertWorkload();
-            benchmarks.push_back(benchmark);
-        }
+            for (auto threads : threadCounts) {
+                benchmarkTemplate.numberOfThreads = threads;
 
-        {
-            auto benchmark = benchmarkTemplate;
-            benchmark.description = "interleaving insert - no failed inserts";
-            benchmark.workStrategy =
-                WorkStrategy::createInterleavingInsertWorkload();
-            benchmarks.push_back(benchmark);
-        }
+                {
+                    auto benchmark = benchmarkTemplate;
+                    benchmark.description =
+                        "ascending insert - no failed inserts";
+                    benchmark.workStrategy =
+                        WorkStrategy::createAscendingInsertWorkload();
+                    benchmarks.push_back(benchmark);
+                }
 
-        {
-            auto benchmark = benchmarkTemplate;
-            benchmark.description = "ascending remove - no failed removes";
-            benchmark.workStrategy =
-                WorkStrategy::createAscendingRemoveWorkload();
-            benchmarks.push_back(benchmark);
-        }
+                {
+                    auto benchmark = benchmarkTemplate;
+                    benchmark.description =
+                        "descending insert - no failed inserts";
+                    benchmark.workStrategy =
+                        WorkStrategy::createDescendingInsertWorkload();
+                    benchmarks.push_back(benchmark);
+                }
 
-        {
-            auto benchmark = benchmarkTemplate;
-            benchmark.description = "descending remove - no failed removes";
-            benchmark.workStrategy =
-                WorkStrategy::createDescendingRemoveWorkload();
-            benchmarks.push_back(benchmark);
-        }
+                {
+                    auto benchmark = benchmarkTemplate;
+                    benchmark.description =
+                        "interleaving insert - no failed inserts";
+                    benchmark.workStrategy =
+                        WorkStrategy::createInterleavingInsertWorkload();
+                    benchmarks.push_back(benchmark);
+                }
 
-        {
-            auto benchmark = benchmarkTemplate;
-            benchmark.description = "interleaving remove - no failed removes";
-            benchmark.workStrategy =
-                WorkStrategy::createInterleavingRemoveWorkload();
-            benchmarks.push_back(benchmark);
-        }
+                {
+                    auto benchmark = benchmarkTemplate;
+                    benchmark.description =
+                        "ascending remove - no failed removes";
+                    benchmark.workStrategy =
+                        WorkStrategy::createAscendingRemoveWorkload();
+                    benchmarks.push_back(benchmark);
+                }
 
-        {
-            auto benchmark = benchmarkTemplate;
-            benchmark.description = "mixed workload - 70% insert, 30% remove";
-            benchmark.workStrategy =
-                WorkStrategy::createMixedWorkload(0.7, 0.3);
-            benchmarks.push_back(benchmark);
+                {
+                    auto benchmark = benchmarkTemplate;
+                    benchmark.description =
+                        "descending remove - no failed removes";
+                    benchmark.workStrategy =
+                        WorkStrategy::createDescendingRemoveWorkload();
+                    benchmarks.push_back(benchmark);
+                }
+
+                {
+                    auto benchmark = benchmarkTemplate;
+                    benchmark.description =
+                        "interleaving remove - no failed removes";
+                    benchmark.workStrategy =
+                        WorkStrategy::createInterleavingRemoveWorkload();
+                    benchmarks.push_back(benchmark);
+                }
+
+                {
+                    auto benchmark = benchmarkTemplate;
+                    benchmark.description =
+                        "mixed workload - 70% insert, 30% remove";
+                    benchmark.workStrategy =
+                        WorkStrategy::createMixedWorkload(0.7, 0.3);
+                    benchmarks.push_back(benchmark);
+                }
+            }
         }
     }
 }
@@ -96,13 +111,32 @@ int main(int argc, char** argv)
                std::find(argv + 1, argv + argc, name) != argv + argc;
     };
 
+    const std::vector<Scaling> scalingModes = {Scaling::Strong, Scaling::Weak};
+    const std::vector<std::size_t> threadCounts = {1, 2, 3, 4, 6, 8};
+    const std::vector<std::size_t> initialSizes = {0, 10000};
+
+    if (benchmark_enabled("SequentialSkipList")) {
+        std::cout << "Running SequentialSkipList benchmark:" << std::endl;
+
+        std::vector<BenchmarkConfiguration> benchmarks;
+        createBenchmarks<SequentialSkipList, 16>(benchmarks, scalingModes, {1},
+                                                 initialSizes);
+        createBenchmarks<SequentialSkipList, 64>(benchmarks, scalingModes, {1},
+                                                 initialSizes);
+
+        saveBenchmarksAsCsv(runBenchmarks(benchmarks), "SequentialSkipList");
+    }
+
     if (benchmark_enabled("ConcurrentSkipList")) {
         std::cout << "Running ConcurrentSkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<ConcurrentSkipList, 8>(benchmarks);
-        createBenchmarksForListHeight<ConcurrentSkipList, 16>(benchmarks);
-        createBenchmarksForListHeight<ConcurrentSkipList, 64>(benchmarks);
+        createBenchmarks<ConcurrentSkipList, 8>(benchmarks, scalingModes,
+                                                threadCounts, initialSizes);
+        createBenchmarks<ConcurrentSkipList, 16>(benchmarks, scalingModes,
+                                                 threadCounts, initialSizes);
+        createBenchmarks<ConcurrentSkipList, 64>(benchmarks, scalingModes,
+                                                 threadCounts, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "ConcurrentSkipList");
     }
@@ -111,46 +145,54 @@ int main(int argc, char** argv)
         std::cout << "Running LazySkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<LazySkipList, 8>(benchmarks);
-        createBenchmarksForListHeight<LazySkipList, 16>(benchmarks);
-        createBenchmarksForListHeight<LazySkipList, 64>(benchmarks);
+        createBenchmarks<LazySkipList, 8>(benchmarks, scalingModes,
+                                          threadCounts, initialSizes);
+        createBenchmarks<LazySkipList, 16>(benchmarks, scalingModes,
+                                           threadCounts, initialSizes);
+        createBenchmarks<LazySkipList, 64>(benchmarks, scalingModes,
+                                           threadCounts, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LazySkipList");
     }
 
     if (benchmark_enabled("MMLazySkipList")) {
-        std::cout << "Running MMLazySkipList benchmark:"
-                  << std::endl;
+        std::cout << "Running MMLazySkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<MMLazySkipList, 8>(benchmarks);
-        createBenchmarksForListHeight<MMLazySkipList, 16>(
-            benchmarks);
-        createBenchmarksForListHeight<MMLazySkipList, 64>(
-            benchmarks);
+        createBenchmarks<MMLazySkipList, 8>(benchmarks, scalingModes,
+                                            threadCounts, initialSizes);
+        createBenchmarks<MMLazySkipList, 16>(benchmarks, scalingModes,
+                                             threadCounts, initialSizes);
+        createBenchmarks<MMLazySkipList, 64>(benchmarks, scalingModes,
+                                             threadCounts, initialSizes);
 
-        saveBenchmarksAsCsv(runBenchmarks(benchmarks),
-                            "MMLazySkipList");
+        saveBenchmarksAsCsv(runBenchmarks(benchmarks), "MMLazySkipList");
     }
 
     if (benchmark_enabled("LockFreeSkipList")) {
         std::cout << "Running LockFreeSkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<LockFreeSkipList, 8>(benchmarks);
-        createBenchmarksForListHeight<LockFreeSkipList, 16>(benchmarks);
-        createBenchmarksForListHeight<LockFreeSkipList, 64>(benchmarks);
+        createBenchmarks<LockFreeSkipList, 8>(benchmarks, scalingModes,
+                                              threadCounts, initialSizes);
+        createBenchmarks<LockFreeSkipList, 16>(benchmarks, scalingModes,
+                                               threadCounts, initialSizes);
+        createBenchmarks<LockFreeSkipList, 64>(benchmarks, scalingModes,
+                                               threadCounts, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LockFreeSkipList");
     }
-    
+
     if (benchmark_enabled("MMLockFreeSkipList")) {
         std::cout << "Running MMLockFreeSkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarksForListHeight<MMLockFreeSkipList, 8>(benchmarks);
-        createBenchmarksForListHeight<MMLockFreeSkipList, 16>(benchmarks);
-        createBenchmarksForListHeight<MMLockFreeSkipList, 64>(benchmarks);
+        createBenchmarks<MMLockFreeSkipList, 8>(benchmarks, scalingModes,
+                                                {2, 3, 4, 6, 8}, initialSizes);
+        createBenchmarks<MMLockFreeSkipList, 16>(benchmarks, scalingModes,
+                                                 {2, 3, 4, 6, 8}, initialSizes);
+        createBenchmarks<MMLockFreeSkipList, 64>(benchmarks, scalingModes,
+                                                 {2, 3, 4, 6, 8}, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "MMLockFreeSkipList");
     }
