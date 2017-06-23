@@ -10,11 +10,11 @@ read_file_data <- function(fname, algo) {
   df
 }
 
-df1 <- read_file_data("data/LazySkipList*.csv", "LazySkipList")
-df2 <- read_file_data("data/LockFreeSkipList*.csv", "LockFreeSkipList")
-df3 <- read_file_data("data/ConcurrentSkipList*.csv", "ConcurrentSkipList")
-df4 <- read_file_data("data/MMLazySkipList*.csv", "MMLazySkipList")
-df5 <- read_file_data("data/SequentialSkipList*.csv", "SequentialSkipList")
+df1 <- read_file_data("LazySkipList*.csv", "LazySkipList")
+df2 <- read_file_data("LockFreeSkipList*.csv", "LockFreeSkipList")
+df3 <- read_file_data("ConcurrentSkipList*.csv", "ConcurrentSkipList")
+df4 <- read_file_data("MMLazySkipList*.csv", "MMLazySkipList")
+df5 <- read_file_data("SequentialSkipList*.csv", "SequentialSkipList")
 
 df1 <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algorithm, data=df1, median)
 df2 <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algorithm, data=df2, median)
@@ -44,8 +44,6 @@ for (cur_strat in strategies) {
         p1 <- ggplot(df, aes(x=threads, y=total_throughput, group=algorithm, color=algorithm)) + 
           geom_point() +
           geom_line() +
-          scale_x_log10() +
-          scale_y_log10() +
           theme_bw() +
           theme(axis.text.x = element_text(angle = 60, hjust=1),
                 legend.position="right") +

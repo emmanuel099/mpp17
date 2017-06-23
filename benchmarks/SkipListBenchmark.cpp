@@ -121,7 +121,7 @@ int main(int argc, char** argv)
     };
 
     const std::vector<Scaling> scalingModes = {Scaling::Strong, Scaling::Weak};
-    const std::vector<std::size_t> threadCounts = {1, 2, 3, 4, 5, 6, 7, 8};
+    const std::vector<std::size_t> threadCounts = {1, 2, 4, 6, 8, 10, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48};
     const std::vector<std::size_t> initialSizes = {0, 10000};
 
     if (benchmark_enabled("SequentialSkipList")) {
