@@ -34,7 +34,7 @@ class MMAtomicMarkableReference
             // store shared pointer for memory management
             std::atomic_store(&this->ref, ref->getptr());
         }
-        
+
         this->value = ((uintptr_t)ref & ~mask) | (marked ? 1 : 0);
     }
 
@@ -43,7 +43,8 @@ class MMAtomicMarkableReference
         uintptr_t oldValue = ((uintptr_t)oldRef & ~mask) | (oldMarked ? 1 : 0);
         uintptr_t newValue = ((uintptr_t)newRef & ~mask) | (newMarked ? 1 : 0);
 
-        if (value.compare_exchange_strong(oldValue, newValue) && newRef != nullptr) {
+        if (value.compare_exchange_strong(oldValue, newValue) &&
+            newRef != nullptr) {
             // update shared pointer for memory management
             std::atomic_store(&this->ref, newRef->getptr());
             return true;

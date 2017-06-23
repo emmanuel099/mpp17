@@ -4,9 +4,9 @@
 #include <atomic>
 #include <cassert>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <random>
-#include <memory>
 
 #include "MMAtomicMarkableReference.h"
 #include "SkipList.h"
@@ -27,15 +27,15 @@ class MMLockFreeSkipList final : public SkipList<T>
     using size_type = typename SkipList<T>::size_type;
 
   private:
-    struct Node : std::enable_shared_from_this<Node> {        
+    struct Node : std::enable_shared_from_this<Node> {
         Node(const_reference value, std::uint16_t height)
             : value(value)
             , height(height)
         {
-            
-        }  
-        
-        std::shared_ptr<Node> getptr() {
+        }
+
+        std::shared_ptr<Node> getptr()
+        {
             return this->shared_from_this();
         }
 
@@ -47,13 +47,13 @@ class MMLockFreeSkipList final : public SkipList<T>
   public:
     MMLockFreeSkipList()
         : m_head(std::make_shared<Node>(std::numeric_limits<value_type>::min(),
-                          MaximumHeight - 1))
-        , m_sentinel(std::make_shared<Node>(std::numeric_limits<value_type>::max(),
-                              MaximumHeight - 1))
+                                        MaximumHeight - 1))
+        , m_sentinel(std::make_shared<Node>(
+              std::numeric_limits<value_type>::max(), MaximumHeight - 1))
         , m_size(0)
-    {                
+    {
         for (std::uint16_t level = 0; level <= MaximumHeight - 1; ++level) {
-           m_head->next[level].set(m_sentinel.get(), false);
+            m_head->next[level].set(m_sentinel.get(), false);
         }
     }
 
@@ -72,7 +72,7 @@ class MMLockFreeSkipList final : public SkipList<T>
 #ifdef COLLECT_STATISTICS
         SkipListStatistics::threadLocalInstance().insertionStart();
 #endif
-        
+
         std::uint16_t topLevel = randomHeight();
         std::array<Node*, MaximumHeight> predecessors;
         std::array<Node*, MaximumHeight> successors;
@@ -87,8 +87,9 @@ class MMLockFreeSkipList final : public SkipList<T>
             }
 
             // prepare new node
-            std::shared_ptr<Node> newNode = std::make_shared<Node>(value, topLevel);
-            
+            std::shared_ptr<Node> newNode =
+                std::make_shared<Node>(value, topLevel);
+
             for (std::uint16_t level = 0; level <= topLevel; ++level) {
                 Node* succ = successors[level];
                 newNode->next[level].set(succ, false);
@@ -97,7 +98,8 @@ class MMLockFreeSkipList final : public SkipList<T>
             // set bottom predecessor
             Node* pred = predecessors[0];
             Node* succ = successors[0];
-            if (!pred->next[0].compareAndSet(succ, newNode.get(), false, false)) {
+            if (!pred->next[0].compareAndSet(succ, newNode.get(), false,
+                                             false)) {
 #ifdef COLLECT_STATISTICS
                 SkipListStatistics::threadLocalInstance().insertionRetry();
 #endif
@@ -110,8 +112,8 @@ class MMLockFreeSkipList final : public SkipList<T>
                 while (true) {
                     pred = predecessors[level];
                     succ = successors[level];
-                    if (pred->next[level].compareAndSet(succ, newNode.get(), false,
-                                                        false)) {
+                    if (pred->next[level].compareAndSet(succ, newNode.get(),
+                                                        false, false)) {
                         break;
                     }
                     find(value, predecessors, successors);
@@ -222,7 +224,8 @@ class MMLockFreeSkipList final : public SkipList<T>
 
         // mark all nodes (expect of head and sentinel)
         for (auto* current = m_head->next[0].getReference();
-             current != m_sentinel.get(); current = current->next[0].getReference()) {
+             current != m_sentinel.get();
+             current = current->next[0].getReference()) {
             for (std::int32_t level = current->height; level >= 0; --level) {
                 Node* succ = current->next[level].get(marked);
                 while (!marked) {
