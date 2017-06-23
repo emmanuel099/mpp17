@@ -37,7 +37,7 @@ static void createBenchmarks(std::vector<BenchmarkConfiguration>& benchmarks,
             for (auto threads : threadCounts) {
                 benchmarkTemplate.numberOfThreads = threads;
 
-                {
+                /*{
                     auto benchmark = benchmarkTemplate;
                     benchmark.description =
                         "ascending insert - no failed inserts";
@@ -53,7 +53,7 @@ static void createBenchmarks(std::vector<BenchmarkConfiguration>& benchmarks,
                     benchmark.workStrategy =
                         WorkStrategy::createDescendingInsertWorkload();
                     benchmarks.push_back(benchmark);
-                }
+                }*/
 
                 {
                     auto benchmark = benchmarkTemplate;
@@ -64,7 +64,7 @@ static void createBenchmarks(std::vector<BenchmarkConfiguration>& benchmarks,
                     benchmarks.push_back(benchmark);
                 }
 
-                {
+                /*{
                     auto benchmark = benchmarkTemplate;
                     benchmark.description =
                         "ascending remove - no failed removes";
@@ -80,7 +80,7 @@ static void createBenchmarks(std::vector<BenchmarkConfiguration>& benchmarks,
                     benchmark.workStrategy =
                         WorkStrategy::createDescendingRemoveWorkload();
                     benchmarks.push_back(benchmark);
-                }
+                }*/
 
                 {
                     auto benchmark = benchmarkTemplate;
@@ -99,6 +99,15 @@ static void createBenchmarks(std::vector<BenchmarkConfiguration>& benchmarks,
                         WorkStrategy::createMixedWorkload(0.7, 0.3);
                     benchmarks.push_back(benchmark);
                 }
+
+                {
+                    auto benchmark = benchmarkTemplate;
+                    benchmark.description =
+                    "mixed workload - 50% insert / 20% remove / 30% search";
+                    benchmark.workStrategy =
+                        WorkStrategy::createMixedWorkload(0.5, 0.2);
+                    benchmarks.push_back(benchmark);
+                }
             }
         }
     }
@@ -112,18 +121,14 @@ int main(int argc, char** argv)
     };
 
     const std::vector<Scaling> scalingModes = {Scaling::Strong, Scaling::Weak};
-    const std::vector<std::size_t> threadCounts = {1, 2, 3, 4, 6, 8};
+    const std::vector<std::size_t> threadCounts = {1, 2, 3, 4, 5, 6, 7, 8};
     const std::vector<std::size_t> initialSizes = {0, 10000};
 
     if (benchmark_enabled("SequentialSkipList")) {
         std::cout << "Running SequentialSkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarks<SequentialSkipList, 8>(benchmarks, scalingModes, {1},
-                                                initialSizes);
         createBenchmarks<SequentialSkipList, 16>(benchmarks, scalingModes, {1},
-                                                 initialSizes);
-        createBenchmarks<SequentialSkipList, 64>(benchmarks, scalingModes, {1},
                                                  initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "SequentialSkipList");
@@ -133,11 +138,7 @@ int main(int argc, char** argv)
         std::cout << "Running ConcurrentSkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarks<ConcurrentSkipList, 8>(benchmarks, scalingModes,
-                                                threadCounts, initialSizes);
         createBenchmarks<ConcurrentSkipList, 16>(benchmarks, scalingModes,
-                                                 threadCounts, initialSizes);
-        createBenchmarks<ConcurrentSkipList, 64>(benchmarks, scalingModes,
                                                  threadCounts, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "ConcurrentSkipList");
@@ -147,11 +148,7 @@ int main(int argc, char** argv)
         std::cout << "Running LazySkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarks<LazySkipList, 8>(benchmarks, scalingModes,
-                                          threadCounts, initialSizes);
         createBenchmarks<LazySkipList, 16>(benchmarks, scalingModes,
-                                           threadCounts, initialSizes);
-        createBenchmarks<LazySkipList, 64>(benchmarks, scalingModes,
                                            threadCounts, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LazySkipList");
@@ -161,11 +158,7 @@ int main(int argc, char** argv)
         std::cout << "Running LockFreeSkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarks<LockFreeSkipList, 8>(benchmarks, scalingModes,
-                                              threadCounts, initialSizes);
         createBenchmarks<LockFreeSkipList, 16>(benchmarks, scalingModes,
-                                               threadCounts, initialSizes);
-        createBenchmarks<LockFreeSkipList, 64>(benchmarks, scalingModes,
                                                threadCounts, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LockFreeSkipList");
@@ -175,11 +168,7 @@ int main(int argc, char** argv)
         std::cout << "Running MMLazySkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarks<MMLazySkipList, 8>(benchmarks, scalingModes,
-                                            threadCounts, initialSizes);
         createBenchmarks<MMLazySkipList, 16>(benchmarks, scalingModes,
-                                             threadCounts, initialSizes);
-        createBenchmarks<MMLazySkipList, 64>(benchmarks, scalingModes,
                                              threadCounts, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "MMLazySkipList");
@@ -189,12 +178,8 @@ int main(int argc, char** argv)
         std::cout << "Running MMLockFreeSkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarks<MMLockFreeSkipList, 8>(benchmarks, scalingModes,
-                                                {2, 3, 4, 6, 8}, initialSizes);
         createBenchmarks<MMLockFreeSkipList, 16>(benchmarks, scalingModes,
-                                                 {2, 3, 4, 6, 8}, initialSizes);
-        createBenchmarks<MMLockFreeSkipList, 64>(benchmarks, scalingModes,
-                                                 {2, 3, 4, 6, 8}, initialSizes);
+                                                 {2, 3, 4, 5, 6, 7, 8}, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "MMLockFreeSkipList");
     }
