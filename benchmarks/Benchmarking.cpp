@@ -11,6 +11,8 @@
 #include "Thread.h"
 #include "Timer.h"
 
+#include "allocator/BlockAllocator.h"
+
 BenchmarkData runBenchmark(const BenchmarkConfiguration& config)
 {
     const auto workStrategy = config.workStrategy;
@@ -34,6 +36,10 @@ BenchmarkData runBenchmark(const BenchmarkConfiguration& config)
             for (std::uint16_t i = 0; i < config.repetitions; i++) {
                 RepetitionData& data = repData[i];
 
+                // create a new list
+                Thread::single([&] { list.reset(); });
+                barrier.wait();
+                SkipListNodeAllocator::threadLocalInstance().freeAll();
                 Thread::single([&] { list = config.listFactory(); });
                 workStrategy.prepare(config, *list);
 

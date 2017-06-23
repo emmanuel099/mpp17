@@ -9,6 +9,7 @@
 
 #include "SkipList.h"
 #include "SkipListStatistics.h"
+#include "allocator/BlockAllocator.h"
 
 template <typename T, std::uint16_t MaximumHeight>
 class LazySkipList final : public SkipList<T>
@@ -32,8 +33,11 @@ class LazySkipList final : public SkipList<T>
         {
         }
 
-        ~Node()
+        static Node* create(const_reference value, std::uint16_t height)
         {
+            auto memory = SkipListNodeAllocator::threadLocalInstance().allocate(
+                sizeof(Node));
+            return new (memory) Node(value, height);
         }
 
         const value_type value;
@@ -46,23 +50,14 @@ class LazySkipList final : public SkipList<T>
 
   public:
     LazySkipList()
-        : m_head(
-              new Node(std::numeric_limits<value_type>::min(), MaximumHeight))
-        , m_sentinel(
-              new Node(std::numeric_limits<value_type>::max(), MaximumHeight))
+        : m_head(Node::create(std::numeric_limits<value_type>::min(),
+                              MaximumHeight))
+        , m_sentinel(Node::create(std::numeric_limits<value_type>::max(),
+                                  MaximumHeight))
         , m_size(0)
     {
         m_head->next.fill(m_sentinel); // connect head with sentinel
         m_sentinel->next.fill(nullptr);
-    }
-
-    ~LazySkipList() override
-    {
-        for (auto* current = m_head; current != nullptr;) {
-            auto* next = current->next[0];
-            delete current;
-            current = next;
-        }
     }
 
     bool empty() override
@@ -130,7 +125,7 @@ class LazySkipList final : public SkipList<T>
             }
 
             // update successors and predecessors
-            const auto& newNode = new Node(value, newHeight);
+            const auto& newNode = Node::create(value, newHeight);
             newNode->next = successors;
             for (std::uint16_t level = 0; level <= newHeight; ++level) {
                 predecessors[level]->next[level] = newNode;

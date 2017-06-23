@@ -10,6 +10,7 @@
 #include "AtomicMarkableReference.h"
 #include "SkipList.h"
 #include "SkipListStatistics.h"
+#include "allocator/BlockAllocator.h"
 
 template <typename T, std::uint16_t MaximumHeight>
 class LockFreeSkipList final : public SkipList<T>
@@ -33,6 +34,13 @@ class LockFreeSkipList final : public SkipList<T>
         {
         }
 
+        static Node* create(const_reference value, std::uint16_t height)
+        {
+            auto memory = SkipListNodeAllocator::threadLocalInstance().allocate(
+                sizeof(Node));
+            return new (memory) Node(value, height);
+        }
+
         const value_type value;
         const std::uint16_t height;
         std::array<AtomicMarkableReference<Node>, MaximumHeight> next;
@@ -40,23 +48,14 @@ class LockFreeSkipList final : public SkipList<T>
 
   public:
     LockFreeSkipList()
-        : m_head(new Node(std::numeric_limits<value_type>::min(),
+        : m_head(Node::create(std::numeric_limits<value_type>::min(),
                           MaximumHeight - 1))
-        , m_sentinel(new Node(std::numeric_limits<value_type>::max(),
+        , m_sentinel(Node::create(std::numeric_limits<value_type>::max(),
                               MaximumHeight - 1))
         , m_size(0)
     {
         for (std::uint16_t level = 0; level <= MaximumHeight - 1; ++level) {
             m_head->next[level].set(m_sentinel, false);
-        }
-    }
-
-    ~LockFreeSkipList() override
-    {
-        for (auto* current = m_head; current != nullptr;) {
-            auto* next = current->next[0].getReference();
-            delete current;
-            current = next;
         }
     }
 
@@ -89,7 +88,7 @@ class LockFreeSkipList final : public SkipList<T>
             }
 
             // prepare new node
-            Node* newNode = new Node(value, topLevel);
+            Node* newNode = Node::create(value, topLevel);
             for (std::uint16_t level = 0; level <= topLevel; ++level) {
                 Node* succ = successors[level];
                 newNode->next[level].set(succ, false);
@@ -102,7 +101,6 @@ class LockFreeSkipList final : public SkipList<T>
 #ifdef COLLECT_STATISTICS
                 SkipListStatistics::threadLocalInstance().insertionRetry();
 #endif
-                delete newNode;
                 continue;
             }
             m_size++;
