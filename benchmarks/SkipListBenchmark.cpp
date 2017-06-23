@@ -23,7 +23,7 @@ static void createBenchmarks(std::vector<BenchmarkConfiguration>& benchmarks,
     BenchmarkConfiguration benchmarkTemplate;
     benchmarkTemplate.repetitions = 30;
     benchmarkTemplate.listHeight = SkipListHeight;
-    benchmarkTemplate.numberOfItems = 250000;
+    benchmarkTemplate.numberOfItems = 120000;
     benchmarkTemplate.listFactory = [] {
         return std::make_unique<T<long, SkipListHeight>>();
     };
@@ -94,7 +94,7 @@ static void createBenchmarks(std::vector<BenchmarkConfiguration>& benchmarks,
                 {
                     auto benchmark = benchmarkTemplate;
                     benchmark.description =
-                        "mixed workload - 70% insert, 30% remove";
+                        "mixed workload - 70% insert / 30% remove";
                     benchmark.workStrategy =
                         WorkStrategy::createMixedWorkload(0.7, 0.3);
                     benchmarks.push_back(benchmark);
@@ -119,6 +119,8 @@ int main(int argc, char** argv)
         std::cout << "Running SequentialSkipList benchmark:" << std::endl;
 
         std::vector<BenchmarkConfiguration> benchmarks;
+        createBenchmarks<SequentialSkipList, 8>(benchmarks, scalingModes, {1},
+                                                initialSizes);
         createBenchmarks<SequentialSkipList, 16>(benchmarks, scalingModes, {1},
                                                  initialSizes);
         createBenchmarks<SequentialSkipList, 64>(benchmarks, scalingModes, {1},
@@ -155,20 +157,6 @@ int main(int argc, char** argv)
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LazySkipList");
     }
 
-    if (benchmark_enabled("MMLazySkipList")) {
-        std::cout << "Running MMLazySkipList benchmark:" << std::endl;
-
-        std::vector<BenchmarkConfiguration> benchmarks;
-        createBenchmarks<MMLazySkipList, 8>(benchmarks, scalingModes,
-                                            threadCounts, initialSizes);
-        createBenchmarks<MMLazySkipList, 16>(benchmarks, scalingModes,
-                                             threadCounts, initialSizes);
-        createBenchmarks<MMLazySkipList, 64>(benchmarks, scalingModes,
-                                             threadCounts, initialSizes);
-
-        saveBenchmarksAsCsv(runBenchmarks(benchmarks), "MMLazySkipList");
-    }
-
     if (benchmark_enabled("LockFreeSkipList")) {
         std::cout << "Running LockFreeSkipList benchmark:" << std::endl;
 
@@ -181,6 +169,20 @@ int main(int argc, char** argv)
                                                threadCounts, initialSizes);
 
         saveBenchmarksAsCsv(runBenchmarks(benchmarks), "LockFreeSkipList");
+    }
+
+    if (benchmark_enabled("MMLazySkipList")) {
+        std::cout << "Running MMLazySkipList benchmark:" << std::endl;
+
+        std::vector<BenchmarkConfiguration> benchmarks;
+        createBenchmarks<MMLazySkipList, 8>(benchmarks, scalingModes,
+                                            threadCounts, initialSizes);
+        createBenchmarks<MMLazySkipList, 16>(benchmarks, scalingModes,
+                                             threadCounts, initialSizes);
+        createBenchmarks<MMLazySkipList, 64>(benchmarks, scalingModes,
+                                             threadCounts, initialSizes);
+
+        saveBenchmarksAsCsv(runBenchmarks(benchmarks), "MMLazySkipList");
     }
 
     if (benchmark_enabled("MMLockFreeSkipList")) {
