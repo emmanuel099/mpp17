@@ -1,0 +1,78 @@
+% !TEX root = template.tex
+
+%----------------------------------------------------------------------
+\section{Description / Strategy}
+
+A Skiplist is basically a collection of sorted list nodes, where each node has a link to one or more following nodes. These links form shortcuts which can be used to speed up the searching by skipping one or more nodes. In contrast to tree-based search structures Skiplists don't require re-balancing, thus making the concurrent implementation easier.
+
+%% TODO add more
+
+
+
+%----------------------------------------------------------------------
+\section{Implementation}
+
+Each concrete Skiplist implements the \texttt{SkipList<T>} interface shown in Listing \ref{lst:skiplist_interface}, providing methods for inserting, removing and searching of values.
+
+\begin{lstlisting}[language=C++, caption={Skiplist Interface}, label=lst:skiplist_interface]
+template <typename T>
+class SkipList
+{
+  public:
+    static_assert(std::is_integral<T>::value, 
+                  "T must be an integral type");
+    
+    virtual bool empty() = 0;
+    virtual size_type size() = 0;
+    virtual bool insert(const_reference value) = 0;
+    virtual bool remove(const_reference value) = 0;
+    virtual bool contains(const_reference value) = 0;
+    virtual void clear() = 0;
+};
+\end{lstlisting}
+\noindent For simplicity all the implementations only support integral types and can only handle unique values, meaning that adding the same value twice will fail on the second time. Additionally each type must have a specified minimum and maximum value, because these values will be used by the \texttt{head} and \texttt{tail} nodes respectively. 
+
+
+
+%------------------
+\subsection{Sequential}
+The sequential Skiplist implements the algorithm described in TODO REF with two small optimizations. The current maximum level of all inserted nodes is cached so that the unused levels can be skipped immediately. Additionally the next-node pointers are stored in a static array within the node object itself, thus eliminating one indirection which would occur when using a dynamic datastructure such as \texttt{std::vector}, with the small downside that it always allocates \texttt{MaxHeight} next-pointer slots even if some slots are unused.
+
+%------------------
+\subsection{Concurrent}
+The concurrent Skiplist is based on the sequential one and uses a \texttt{std::mutex} to control the concurrent access of multiple threads. The implementation simply forwards all requests to the internal instance of a sequential Skiplist after successfully grabbing the lock, i.e. the access to the internal sequential list is serialized.
+
+%------------------
+\subsection{Lazy}
+
+%------------------
+\subsection{Lock-Free}
+
+
+
+%----------------------------------------------------------------------
+\section{Experimental Setup}
+
+%------------------
+\subsection{Simulated Workloads}
+
+\subsubsection{Interleaving Insert}
+
+\subsubsection{Interleaving Remove}
+
+\subsubsection{Mix of Insertions, Removals and Searches}
+
+
+%------------------
+\subsection{Skiplist Statistics}
+
+To get a better picture about the performance and behavior of the Skiplist, performance counters have been added to the \texttt{insert}, \texttt{remove} and \texttt{contains} methods of all Skiplist implementations. These performance counters collect the number of retries, which is especially interesting for the lazy and lock free implementations, as well as the number of successful and failed invocations. Based on these performance counters multiple different metrics can be evaluated, such as the average number of retries of \texttt{insert}, \texttt{remove} and \texttt{contains}.\\
+
+\noindent To minimize the possible influences on the benchmarking results, each thread collects the data in a thread-local statistics object, thus no locking and no atomics are required. At the end of each benchmark the thread-local statistics are aggregated by the benchmark suite to get the complete statistics.\\
+
+\noindent The statistics collection can be completely turned off and thus doesn't add any overhead to production use.
+
+%----------------------------------------------------------------------
+\section{Experimental Results}
+
+Each benchmark was repeated $30$ times. The execution time and Skiplist statistics of each repetition was collected and post-processed.
