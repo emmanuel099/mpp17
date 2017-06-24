@@ -26,8 +26,8 @@ df5 <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algor
 strategies <- c("interleaving insert - no failed inserts", "interleaving remove - no failed removes", 
                 "mixed workload - 70% insert / 30% remove", "mixed workload - 50% insert / 20% remove / 30% search")
 
-scales <- c("weak", "strong")
-init_items <- c(0, 10000)
+scales <- c("strong")
+init_items <- c(0)
 
 for (cur_strat in strategies) {
     for (cur_scale in scales) {

@@ -120,9 +120,9 @@ int main(int argc, char** argv)
                std::find(argv + 1, argv + argc, name) != argv + argc;
     };
 
-    const std::vector<Scaling> scalingModes = {Scaling::Strong, Scaling::Weak};
-    const std::vector<std::size_t> threadCounts = {1, 2, 4, 6, 8, 10, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48};
-    const std::vector<std::size_t> initialSizes = {0, 10000};
+    const std::vector<Scaling> scalingModes = {Scaling::Strong};
+    const std::vector<std::size_t> threadCounts = {1, 2, 4, 8, 12, 16, 24, 32, 40, 48};
+    const std::vector<std::size_t> initialSizes = {0};
 
     if (benchmark_enabled("SequentialSkipList")) {
         std::cout << "Running SequentialSkipList benchmark:" << std::endl;
