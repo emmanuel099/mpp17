@@ -1,5 +1,14 @@
 library(ggplot2)
 library(dplyr)
+library(Rmisc)
+
+lower_ci <- function(a) {
+  return(mean(a) - qt(0.975, df=length(a)-1)*sd(a)/sqrt(length(a)))
+}
+
+upper_ci <- function(a) {
+  return(mean(a) + qt(0.975, df=length(a)-1)*sd(a)/sqrt(length(a)))
+}
 
 read_file_data <- function(fname, algo) {
   df <- read.table(list.files(pattern = glob2rx(fname)), header=FALSE, sep=";")
@@ -7,7 +16,21 @@ read_file_data <- function(fname, algo) {
                  "failed_inserts", "insert_retries", "insert_throughput", "removals", "failed_removals", "remove_retries", "remove_throughput",
                  "finds", "find_retries", "find_throughput")
   df$algorithm <- algo
-  df
+  
+  df1 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df, mean)
+  df1$lower_ci <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algorithm, data=df, lower_ci)$total_throughput
+  df1$upper_ci <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algorithm, data=df, upper_ci)$total_throughput
+  
+  df1$insert_retries_lower_ci <- aggregate(cbind(insert_retries)~strategy+threads+scale+init_items+algorithm, data=df, lower_ci)$insert_retries
+  df1$insert_retries_upper_ci <- aggregate(cbind(insert_retries)~strategy+threads+scale+init_items+algorithm, data=df, upper_ci)$insert_retries
+  
+  df1$remove_retries_lower_ci <- aggregate(cbind(remove_retries)~strategy+threads+scale+init_items+algorithm, data=df, lower_ci)$remove_retries
+  df1$remove_retries_upper_ci <- aggregate(cbind(remove_retries)~strategy+threads+scale+init_items+algorithm, data=df, upper_ci)$remove_retries
+  
+  df1$find_retries_lower_ci <- aggregate(cbind(find_retries)~strategy+threads+scale+init_items+algorithm, data=df, lower_ci)$find_retries
+  df1$find_retries_upper_ci <- aggregate(cbind(find_retries)~strategy+threads+scale+init_items+algorithm, data=df, upper_ci)$find_retries
+  
+  return(df1)
 }
 
 df1 <- read_file_data("LazySkipList*.csv", "LazySkipList")
@@ -15,13 +38,6 @@ df2 <- read_file_data("LockFreeSkipList*.csv", "LockFreeSkipList")
 df3 <- read_file_data("ConcurrentSkipList*.csv", "ConcurrentSkipList")
 df4 <- read_file_data("MMLazySkipList*.csv", "MMLazySkipList")
 df5 <- read_file_data("SequentialSkipList*.csv", "SequentialSkipList")
-
-df1 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df1, median)
-df2 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df2, median)
-df3 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df3, median)
-df4 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df4, median)
-df5 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df5, median)
-
 
 strategies <- c("interleaving insert - no failed inserts", "interleaving remove - no failed removes", 
                 "mixed workload - 70% insert / 30% remove", "mixed workload - 50% insert / 20% remove / 30% search")
@@ -42,6 +58,7 @@ for (cur_strat in strategies) {
         
         # throughput plot
         p1 <- ggplot(df, aes(x=threads, y=total_throughput / 1000, group=algorithm, color=algorithm)) + 
+          geom_errorbar(aes(ymin=lower_ci/1000, ymax=upper_ci/1000), width=.1) +
           geom_point() +
           geom_line() +
           theme_bw() +
@@ -81,8 +98,10 @@ for (i in seq(1, length(strategies))) {
   
   df <- rbind(df1.1, df2.1, df4.1)
   
-  p2 <- ggplot(df, aes(x=threads, y=df[, columns[i]], group=algorithm, color=algorithm)) + 
-     geom_bar(stat="identity", position=position_dodge(), aes(fill=algorithm)) +
+  p2 <- ggplot(df, aes(x=threads, y=df[, columns[i]], group=algorithm, fill=algorithm, width=5)) + 
+     geom_bar(stat="identity", position=position_dodge(), color="black") +
+     geom_errorbar(aes(ymin=df[, paste(columns[i], "_lower_ci", sep="")], ymax=df[, paste(columns[i], "_upper_ci", sep="")], width=2),
+                   position=position_dodge(5)) +
      theme_bw() +
      theme(axis.text.x = element_text(angle = 60, hjust=1),
            legend.position="top") +
