@@ -23,7 +23,7 @@ static void createBenchmarks(std::vector<BenchmarkConfiguration>& benchmarks,
     BenchmarkConfiguration benchmarkTemplate;
     benchmarkTemplate.repetitions = 30;
     benchmarkTemplate.listHeight = SkipListHeight;
-    benchmarkTemplate.numberOfItems = 120000;
+    benchmarkTemplate.numberOfItems = 1000000;
     benchmarkTemplate.listFactory = [] {
         return std::make_unique<T<long, SkipListHeight>>();
     };

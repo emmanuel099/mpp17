@@ -9,14 +9,14 @@ struct BenchmarkResult {
     double totalThroughput; // per s
     std::size_t numberOfInsertions;
     double percentageFailedInsert;
-    std::size_t averageNumberOfRetriesDuringInsert;
+    double averageNumberOfRetriesDuringInsert;
     double insertThroughput; // per s
     std::size_t numberOfRemovals;
     double percentageFailedRemove;
-    std::size_t averageNumberOfRetriesDuringRemove;
+    double averageNumberOfRetriesDuringRemove;
     double removeThroughput; // per s
     std::size_t numberOfFinds;
-    std::size_t averageNumberOfRetriesDuringFind;
+    double averageNumberOfRetriesDuringFind;
     double findThroughput; // per s
 };
 

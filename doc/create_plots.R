@@ -16,11 +16,11 @@ df3 <- read_file_data("ConcurrentSkipList*.csv", "ConcurrentSkipList")
 df4 <- read_file_data("MMLazySkipList*.csv", "MMLazySkipList")
 df5 <- read_file_data("SequentialSkipList*.csv", "SequentialSkipList")
 
-df1 <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algorithm, data=df1, median)
-df2 <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algorithm, data=df2, median)
-df3 <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algorithm, data=df3, median)
-df4 <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algorithm, data=df4, median)
-df5 <- aggregate(cbind(total_throughput)~strategy+threads+scale+init_items+algorithm, data=df5, median)
+df1 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df1, median)
+df2 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df2, median)
+df3 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df3, median)
+df4 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df4, median)
+df5 <- aggregate(cbind(total_throughput, insert_retries, remove_retries, find_retries)~strategy+threads+scale+init_items+algorithm, data=df5, median)
 
 
 strategies <- c("interleaving insert - no failed inserts", "interleaving remove - no failed removes", 
@@ -38,16 +38,16 @@ for (cur_strat in strategies) {
         df4.1 <- subset(df4, scale == cur_scale & strategy == cur_strat & init_items == cur_init_items)
         df5.1 <- subset(df5, scale == cur_scale & strategy == cur_strat & init_items == cur_init_items)
         
-        
         df <- rbind(df1.1, df2.1, df3.1, df4.1, df5.1)
         
-        p1 <- ggplot(df, aes(x=threads, y=total_throughput, group=algorithm, color=algorithm)) + 
+        # throughput plot
+        p1 <- ggplot(df, aes(x=threads, y=total_throughput / 1000, group=algorithm, color=algorithm)) + 
           geom_point() +
           geom_line() +
           theme_bw() +
           theme(axis.text.x = element_text(angle = 60, hjust=1),
                 legend.position="right") +
-          ylab("throughput [Ops/s]") +
+          ylab("throughput [ops/msec]") +
           xlab("threads")
         plot(p1)
         
@@ -61,3 +61,40 @@ for (cur_strat in strategies) {
       }
   }
 }
+
+
+strategies <- c("interleaving insert - no failed inserts", "interleaving remove - no failed removes", 
+                "mixed workload - 70% insert / 30% remove", "mixed workload - 70% insert / 30% remove",
+                "mixed workload - 50% insert / 20% remove / 30% search", "mixed workload - 50% insert / 20% remove / 30% search", 
+                "mixed workload - 50% insert / 20% remove / 30% search")
+
+columns <- c("insert_retries", "remove_retries", "insert_retries", "remove_retries", "insert_retries", "remove_retries", "find_retries")
+
+
+cur_init_items <- 0
+cur_scale <- "strong"
+for (i in seq(1, length(strategies))) {
+
+  df1.1 <- subset(df1, scale == cur_scale & strategy == strategies[i] & init_items == cur_init_items)
+  df2.1 <- subset(df2, scale == cur_scale & strategy == strategies[i] & init_items == cur_init_items)
+  df4.1 <- subset(df4, scale == cur_scale & strategy == strategies[i] & init_items == cur_init_items)
+  
+  df <- rbind(df1.1, df2.1, df4.1)
+  
+  p2 <- ggplot(df, aes(x=threads, y=df[, columns[i]], group=algorithm, color=algorithm)) + 
+     geom_bar(stat="identity", position=position_dodge(), aes(fill=algorithm)) +
+     theme_bw() +
+     theme(axis.text.x = element_text(angle = 60, hjust=1),
+           legend.position="top") +
+     ylab("#retries/insert") +
+     xlab("threads")
+   plot(p2)
+   
+   filename <- paste(columns[i], "_", strategies[i] , "_", cur_scale, "_", cur_init_items, ".pdf", sep="")
+   filename <- gsub("/", "," , filename)
+   filename <- gsub("%", "p", filename)
+   
+   pdf(paste("plots/", filename, sep=""), width=6, height=4)
+   plot(p2)
+   dev.off()
+ }
