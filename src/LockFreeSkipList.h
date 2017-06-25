@@ -98,7 +98,7 @@ class LockFreeSkipList final : public SkipList<T>
             // set bottom predecessor
             Node* pred = predecessors[0];
             Node* succ = successors[0];
-            if (!pred->next[0].compareAndSet(succ, newNode, false, false)) {
+            if (!pred->next[0].compareAndSet(succ, newNode, false, false)) { // linearization point
 #ifdef COLLECT_STATISTICS
                 SkipListStatistics::threadLocalInstance().insertionRetry();
 #endif
@@ -161,7 +161,7 @@ class LockFreeSkipList final : public SkipList<T>
             succ = nodeToRemove->next[0].get(marked);
             while (true) {
                 bool done = nodeToRemove->next[0].compareAndSet(succ, succ,
-                                                                false, true);
+                                                                false, true); //linearization point
                 succ = successors[0]->next[0].get(marked);
                 if (done) {
 #ifdef COLLECT_STATISTICS
