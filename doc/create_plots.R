@@ -58,7 +58,7 @@ for (cur_strat in strategies) {
         
         # throughput plot
         p1 <- ggplot(df, aes(x=threads, y=total_throughput / 1000, group=algorithm, color=algorithm)) + 
-          geom_errorbar(aes(ymin=lower_ci/1000, ymax=upper_ci/1000), width=.1) +
+          geom_errorbar(aes(ymin=lower_ci/1000, ymax=upper_ci/1000), width=1) +
           geom_point() +
           geom_line() +
           theme_bw() +
@@ -100,7 +100,7 @@ for (i in seq(1, length(strategies))) {
   
   p2 <- ggplot(df, aes(x=threads, y=df[, columns[i]], group=algorithm, fill=algorithm, width=5)) + 
      geom_bar(stat="identity", position=position_dodge(), color="black") +
-     geom_errorbar(aes(ymin=df[, paste(columns[i], "_lower_ci", sep="")], ymax=df[, paste(columns[i], "_upper_ci", sep="")], width=2),
+     geom_errorbar(aes(ymin=df[, paste(columns[i], "_lower_ci", sep="")], ymax=df[, paste(columns[i], "_upper_ci", sep="")], width=1),
                    position=position_dodge(5)) +
      theme_bw() +
      theme(axis.text.x = element_text(angle = 60, hjust=1),
