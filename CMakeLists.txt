@@ -14,11 +14,6 @@ find_package(Threads REQUIRED)
 
 find_package(Boost ${BOOST_VERSION} REQUIRED COMPONENTS thread)
 
-find_program(CLANG_TIDY_PATH NAMES clang-tidy)
-if(NOT CLANG_TIDY_PATH)
-    message(FATAL_ERROR "Could not find clang-tidy")
-endif()
-
 include_directories(${Boost_INCLUDE_DIRS})
 
 add_subdirectory(src)

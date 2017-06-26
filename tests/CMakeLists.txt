@@ -21,7 +21,6 @@ target_compile_options(skiplist_tests
 )
 
 set_property(TARGET skiplist_tests PROPERTY CXX_STANDARD 14)
-set_property(TARGET skiplist_tests PROPERTY CXX_CLANG_TIDY ${CLANG_TIDY_PATH};-checks=*)
 
 add_test(AllTests skiplist_tests)
 GTEST_ADD_TESTS(skiplist_tests "" AUTO)

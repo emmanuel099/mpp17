@@ -14,7 +14,6 @@ target_compile_options(skiplistcore
 )
 
 set_property(TARGET skiplistcore PROPERTY CXX_STANDARD 11)
-set_property(TARGET skiplistcore PROPERTY CXX_CLANG_TIDY ${CLANG_TIDY_PATH};-checks=*)
 
 ################################################################################
 
@@ -34,4 +33,3 @@ target_compile_options(skiplist
 )
 
 set_property(TARGET skiplist PROPERTY CXX_STANDARD 11)
-set_property(TARGET skiplist PROPERTY CXX_CLANG_TIDY ${CLANG_TIDY_PATH};-checks=*)
