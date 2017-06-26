@@ -1,6 +1,5 @@
 library(ggplot2)
 library(dplyr)
-library(Rmisc)
 
 lower_ci <- function(a) {
   return(mean(a) - qt(0.975, df=length(a)-1)*sd(a)/sqrt(length(a)))
@@ -71,6 +70,7 @@ for (cur_strat in strategies) {
         filename <- paste(cur_strat , "_", cur_scale, "_", cur_init_items, ".pdf", sep="")
         filename <- gsub("/", "," , filename)
         filename <- gsub("%", "p", filename)
+        filename <- gsub(" ", "_", filename)
         
         pdf(paste("plots/", filename, sep=""), width=6, height=4)
         plot(p1)
@@ -86,6 +86,7 @@ strategies <- c("interleaving insert - no failed inserts", "interleaving remove 
                 "mixed workload - 50% insert / 20% remove / 30% search")
 
 columns <- c("insert_retries", "remove_retries", "insert_retries", "remove_retries", "insert_retries", "remove_retries", "find_retries")
+axis_desc <- c("insert", "remove", "insert", "remove", "insert", "remove", "find")
 
 
 cur_init_items <- 0
@@ -105,13 +106,14 @@ for (i in seq(1, length(strategies))) {
      theme_bw() +
      theme(axis.text.x = element_text(angle = 60, hjust=1),
            legend.position="top") +
-     ylab("#retries/insert") +
+     ylab(paste("#retries /", axis_desc[i])) +
      xlab("threads")
    plot(p2)
    
    filename <- paste(columns[i], "_", strategies[i] , "_", cur_scale, "_", cur_init_items, ".pdf", sep="")
    filename <- gsub("/", "," , filename)
    filename <- gsub("%", "p", filename)
+   filename <- gsub(" ", "_", filename)
    
    pdf(paste("plots/", filename, sep=""), width=6, height=4)
    plot(p2)

@@ -44,7 +44,13 @@ The ConcurrentSkiplist is based on the sequential one and uses a \texttt{std::mu
 
 %------------------
 \subsection{Lazy}
-The LazySkipList was based on the algorithm discussed in \cite{}. Instead of serializing all accesses as in the ConcurrentSkipList, it uses a \texttt{std::mutex} per node to serialize as little as possible. Additionally to the lock, each node contains two flags: \texttt{marked}, indicating that the node is virtually removed from the list and \texttt{fullyLinked}, which is set when the node is fully linked into the SkipList. These flags determine when a performed action (insert or remove) is visible to the other processes and therefore the moment when either the flag \texttt{marked} or \texttt{fullyLinked} is set to true is the linearization point of the respective method.
+The LazySkipList was based on the algorithm discussed in \cite{}. Instead of serializing all accesses as in the ConcurrentSkipList, it uses a \texttt{std::mutex} per node to serialize as little as possible.
+
+\subsubsection*{Linearizability}
+Additionally to the lock, each node contains two flags: \texttt{marked}, indicating that the node is virtually removed from the list and \texttt{fullyLinked}, which is set when the node is fully linked into the SkipList. These flags determine when a performed action (insert or remove) is visible to the other processes and therefore the moment when either the flag \texttt{marked} or \texttt{fullyLinked} is set to \texttt{true} is the linearization point of the respective method.
+
+\subsubsection*{Memory-Managed Version}
+In the standard implementations of the LazySkipList (and the LockFreeSkipList) the memory of nodes which are removed from the list is not deallocated. To fix this flaw, the MMLazySkipList uses \texttt{C++11} reference counted smart pointers to deallocate all removed nodes.
 
 %------------------
 \subsection{Lock-Free}
@@ -79,7 +85,9 @@ class AtomicMarkableReference
     static const uintptr_t mask = 1;
 };
 \end{lstlisting}
-\noindent As in the LazySkipList the linearization point for removing a list element is the moment when the marked flag is set to true. The linearization point for the insert operation is defined in the LockFreeSkipList as the moment the node is linked in at the bottom level.
+
+\subsubsection*{Linearizability}
+\noindent As in the LazySkipList the linearization point for removing a list element is the moment when the marked flag is set to \texttt{true}. The linearization point for the insert operation is defined in the LockFreeSkipList as the moment the node is linked in at the bottom level.
 
 %----------------------------------------------------------------------
 \section{Experimental Setup}
@@ -106,3 +114,64 @@ To get a better picture about the performance and behavior of the Skiplist, perf
 \section{Experimental Results}
 
 Each benchmark was repeated $30$ times. The execution time and Skiplist statistics of each repetition was collected and post-processed.
+
+\subsection{Throughput}
+
+\begin{figure}[H]
+    \centering
+    
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../plots/interleaving_insert_-_no_failed_inserts_strong_0.pdf}
+        \caption{Interleaving Insert}
+        \label{fig:Scatter:OpenMPI:Rel:31}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../plots/interleaving_remove_-_no_failed_removes_strong_0.pdf}
+        \caption{Interleaving Remove}
+        \label{fig:Scatter:OpenMPI:Abs:31}
+    \end{subfigure}
+    
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../plots/mixed_workload_-_50p_insert_,_20p_remove_,_30p_search_strong_0.pdf}
+        \caption{50\% Insert, 20\% Remove, 30\% Contains}
+        \label{fig:Scatter:OpenMPI:Rel:32}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../plots/mixed_workload_-_70p_insert_,_30p_remove_strong_0.pdf}
+        \caption{70\% Insert, 30\% Remove}
+        \label{fig:Scatter:OpenMPI:Abs:32}
+    \end{subfigure}
+    
+    \caption{SkipList throughput for different algorithms}
+\end{figure}
+
+
+\subsection{Performance Counters}
+
+\begin{figure}[H]
+    \centering
+    
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../plots/insert_retries_interleaving_insert_-_no_failed_inserts_strong_0.pdf}
+        \caption{Interleaving Insert}
+        \label{fig:Scatter:OpenMPI:Rel:31}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../plots/remove_retries_interleaving_remove_-_no_failed_removes_strong_0.pdf}
+        \caption{Interleaving Remove}
+        \label{fig:Scatter:OpenMPI:Abs:31}
+    \end{subfigure}
+    
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../plots/insert_retries_mixed_workload_-_50p_insert_,_20p_remove_,_30p_search_strong_0.pdf}
+        \caption{50\% Insert, 20\% Remove, 30\% Contains}
+        \label{fig:Scatter:OpenMPI:Rel:32}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../plots/remove_retries_mixed_workload_-_70p_insert_,_30p_remove_strong_0.pdf}
+        \caption{70\% Insert, 30\% Remove}
+        \label{fig:Scatter:OpenMPI:Abs:32}
+    \end{subfigure}
+    
+    \caption{Retries / Operation}
+\end{figure}
