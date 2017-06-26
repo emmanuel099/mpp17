@@ -9,7 +9,7 @@ A Skiplist is basically a collection of sorted list nodes, where each node has a
 
 \noindent Nodes can be found by starting at the maximum level and travel along the nodes of the current level as long as possible, thus exploiting the shortcut links. Whenever the value of the inspected node is bigger than the desired value, the level has to be decreased by one and the lookup can go on further.\\
 
-\noindent The randomized Skiplist uses coin flipping to probabilistically determine the height of a new node. The coin flipping is repeated until head is reached, thus the node will have a height of $h$ with a probability of $\frac{1}{2^h}$. The height of the Skiplist, which is the maximum height of all nodes in the list, is $\mathcal{O}(\log{n})$ with high probability. Given that the \texttt{insert}, \texttt{remove} and \texttt{contains} methods all use the internal \texttt{find} method to search for a node as well as its predecessors and successors, the maximum bounds of these methods is equal to the maximum bound of the \texttt{find} method because the remaing parts of these methods take constant time. Given that \texttt{find} either travels down the levels of a node (bounded by height $\mathcal{O}(\log{n})$) or travels along on the nodes on one level, the \texttt{find} method is bounded by $\mathcal{O}(\log{n})$ with high probability. Thus the \texttt{insert}, \texttt{remove} and \texttt{contains} methods are all bounded by $\mathcal{O}(\log{n})$ with high probability.
+\noindent The randomized Skiplist uses coin flipping to probabilistically determine the height of a new node. The coin flipping is repeated until head is reached, thus the node will have a height of $h$ with a probability of $\frac{1}{2^h}$. The height of the Skiplist, which is the maximum height of all nodes in the list, is $\mathcal{O}(\log{n})$ with high probability. Given that the \texttt{insert}, \texttt{remove} and \texttt{contains} methods all use the internal \texttt{find} method to search for a node as well as its predecessors and successors, the maximum bounds of these methods is equal to the maximum bound of the \texttt{find} method because the remaining parts of these methods take constant time. Given that \texttt{find} either travels down the levels of a node (bounded by height $\mathcal{O}(\log{n})$) or travels along on the nodes on one level, the \texttt{find} method is bounded by $\mathcal{O}(\log{n})$ with high probability. Thus the \texttt{insert}, \texttt{remove} and \texttt{contains} methods are all bounded by $\mathcal{O}(\log{n})$ with high probability.
 
 %----------------------------------------------------------------------
 \section{Implementation}
@@ -37,29 +37,30 @@ class SkipList
 
 %------------------
 \subsection{Sequential}
-The sequential Skiplist implements the algorithm described in \cite{Herlihy:2008:AMP:1734069} with two small optimizations. The current maximum level of all inserted nodes is cached so that the unused levels can be skipped immediately. Additionally the next-node pointers are stored in a static array within the node object itself, thus eliminating one indirection which would occur when using a dynamic datastructure such as \texttt{std::vector}, with the small downside that it always allocates \texttt{MaxHeight} next-pointer slots even if some slots are unused.
+The \texttt{SequentialSkiplist} implements the algorithm described in \cite{Herlihy:2008:AMP:1734069} with two small optimizations. The current maximum level of all inserted nodes is cached so that the unused levels can be skipped immediately. Additionally the next-node pointers are stored in a static array within the node object itself, thus eliminating one indirection which would occur when using a dynamic datastructure such as \texttt{std::vector}, with the small downside that it always allocates \texttt{MaxHeight} next-pointer slots even if some slots are unused.
 
 %------------------
 \subsection{Concurrent}
-The ConcurrentSkiplist is based on the sequential one and uses a \texttt{std::mutex} to control the concurrent access of multiple threads. The implementation simply forwards all requests to the internal instance of a sequential Skiplist after successfully grabbing the lock, thus serializing the access to the internal sequential Skiplist.
+The \texttt{ConcurrentSkiplist} is based on the sequential one and uses a \texttt{std::mutex} to control the concurrent access of multiple threads. The implementation simply forwards all requests to the internal instance of a sequential Skiplist after successfully grabbing the lock, thus serializing the access to the internal \texttt{SequentialSkiplist}.
 
 %------------------
 \subsection{Lazy}
-The LazySkipList was based on the algorithm discussed in \cite{Herlihy:2008:AMP:1734069}. Instead of serializing all accesses as in the ConcurrentSkipList, it uses a \texttt{std::mutex} per node to serialize as little as possible.
+The LazySkipList was based on the algorithm discussed in \cite{Herlihy:2008:AMP:1734069}. Instead of serializing all accesses as in the \texttt{ConcurrentSkipList}, it uses a \texttt{std::mutex} per node to serialize as little as possible.
 
 \subsubsection*{Linearizability}
 Additionally to the lock, each node contains two flags: \texttt{marked}, indicating that the node is virtually removed from the list and \texttt{fullyLinked}, which is set when the node is fully linked into the SkipList. These flags determine when a performed action (insert or remove) is visible to the other processes and therefore the moment when either the flag \texttt{marked} or \texttt{fullyLinked} is set to \texttt{true} is the linearization point of the respective method.
 
 \subsubsection*{Progress Guarantees}
-Due to order in which the processes obtain and release the locks, it can be shown, that the implementation is deadlock-free: Each process aquires the lock of the predecessor from level 0 to max-level. Because of the way the nodes are linked in the SkipList, every process always aquires locks of nodes with higher keys first. So it cannot be, that two processes want to aquire a lock which the other process holds and therefore the LazySkipList is deadlock-free.\\
-While the insert and remove methods are blocking, the contains method of the LazySkipList is wait-free, which can be seen because it uses no locks and never has to restart it's execution.
+Due to order in which the processes obtain and release the locks, it can be shown, that the implementation is deadlock-free: Each process acquires the lock of the predecessor from level 0 to max-level. Because of the way the nodes are linked in the SkipList, every process always acquires locks of nodes with higher keys first. So it cannot be, that two processes want to acquire a lock which the other process holds and therefore the \texttt{LazySkipList} is deadlock-free.\\
+
+\noindent While the insert and remove methods are blocking, the contains method of the \texttt{LazySkipList} is wait-free, which can be seen because it uses no locks and never has to restart it's execution.
 
 \subsubsection*{Memory-Managed Version}
-In the standard implementations of the LazySkipList (and the LockFreeSkipList) the memory of nodes which are removed from the list is not deallocated. To fix this flaw, the MMLazySkipList uses \texttt{C++11} reference counted smart-pointers to deallocate all removed nodes.
+In the standard implementations of the \texttt{LazySkipList} (and the \texttt{LockFreeSkipList}) the memory of nodes which are removed from the list is not deallocated. To fix this flaw, the \texttt{MMLazySkipList} uses \texttt{C++11} reference counted smart pointers to deallocate all removed nodes.
 
 %------------------
 \subsection{Lock-Free}
-The LockFreeSkipList \cite{Herlihy:2008:AMP:1734069} enables concurrent access without locks by using atomic \texttt{compareAndSet} operations for all list manipulations. Any list manipulations in the algorithm consists of changing the successor reference of a node while ensuring that the marked flag \textbf{and} the successor have not changed before. Because standard \texttt{compareAndSet} implementations only support to compare one value, we merge the reference and the marked flag into one \texttt{std::atomic\_uintptr\_t} by using one unused bit of the reference for our marked flag (See Listing \ref{lst:atomic_markable_reference}).
+The \texttt{LockFreeSkipList} \cite{Herlihy:2008:AMP:1734069} enables concurrent access without locks by using atomic \texttt{compareAndSet} operations for all list manipulations. Any list manipulations in the algorithm consists of changing the successor reference of a node while ensuring that the marked flag \textbf{and} the successor have not changed before. Because standard \texttt{compareAndSet} implementations only support to compare one value, we merge the reference and the marked flag into one \texttt{std::atomic\_uintptr\_t} by using one unused bit of the reference for our marked flag (see Listing \ref{lst:atomic_markable_reference}).
 
 \begin{lstlisting}[language=C++, caption={AtomicMarkableReference}, label=lst:atomic_markable_reference]
 template <typename T>
@@ -92,11 +93,12 @@ class AtomicMarkableReference
 \end{lstlisting}
 
 \subsubsection*{Linearizability}
-\noindent As in the LazySkipList the linearization point for removing a list element is the moment when the marked flag is set to \texttt{true}. The linearization point for the insert operation is defined in the LockFreeSkipList as the moment the node is linked in at the bottom level.
+\noindent As in the \texttt{LazySkipList} the linearization point for removing a list element is the moment when the marked flag is set to \texttt{true}. The linearization point for the insert operation is defined in the \texttt{LockFreeSkipList} as the moment the node is linked in at the bottom level.
 
 \subsubsection*{Progress Guarantees}
-The datastructure is lock-free because it is guaranteed that always some method call finishes in a finite number of steps: For the insert or remove operations, the only way this property is violated, if the compareAndSet methods fail, triggering a restart of the method. But this only happens if another process has successfully completed the compareAndSet method and thus made progress in its execution.\\
-As in the LazySkipList the contains method is wait-free.
+The datastructure is lock-free because it is guaranteed that always some method call finishes in a finite number of steps: For the insert or remove operations, the only way this property is violated, if the \texttt{compareAndSet} methods fail, triggering a restart of the method. But this only happens if another process has successfully completed the \texttt{compareAndSet} method and thus made progress in its execution.\\
+
+\noindent As in the \texttt{LazySkipList} the contains method is wait-free.
 
 %----------------------------------------------------------------------
 \section{Experimental Setup}
