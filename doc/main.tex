@@ -45,7 +45,7 @@ The ConcurrentSkiplist is based on the sequential one and uses a \texttt{std::mu
 
 %------------------
 \subsection{Lazy}
-The LazySkipList was based on the algorithm discussed in \cite{}. Instead of serializing all accesses as in the ConcurrentSkipList, it uses a \texttt{std::mutex} per node to serialize as little as possible.
+The LazySkipList was based on the algorithm discussed in \cite{Herlihy:2008:AMP:1734069}. Instead of serializing all accesses as in the ConcurrentSkipList, it uses a \texttt{std::mutex} per node to serialize as little as possible.
 
 \subsubsection*{Linearizability}
 Additionally to the lock, each node contains two flags: \texttt{marked}, indicating that the node is virtually removed from the list and \texttt{fullyLinked}, which is set when the node is fully linked into the SkipList. These flags determine when a performed action (insert or remove) is visible to the other processes and therefore the moment when either the flag \texttt{marked} or \texttt{fullyLinked} is set to \texttt{true} is the linearization point of the respective method.
