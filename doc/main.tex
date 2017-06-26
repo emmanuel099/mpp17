@@ -50,6 +50,10 @@ The LazySkipList was based on the algorithm discussed in \cite{}. Instead of ser
 \subsubsection*{Linearizability}
 Additionally to the lock, each node contains two flags: \texttt{marked}, indicating that the node is virtually removed from the list and \texttt{fullyLinked}, which is set when the node is fully linked into the SkipList. These flags determine when a performed action (insert or remove) is visible to the other processes and therefore the moment when either the flag \texttt{marked} or \texttt{fullyLinked} is set to \texttt{true} is the linearization point of the respective method.
 
+\subsubsection*{Progress Guarantees}
+Due to order in which the processes obtain and release the locks, it can be shown, that the implementation is deadlock-free: Each process aquires the lock of the predecessor from level 0 to max-level. Because of the way the nodes are linked in the SkipList, every process always aquires locks of nodes with higher keys first. So it cannot be, that two processes want to aquire a lock which the other process holds and therefore the LazySkipList is deadlock-free.\\
+While the insert and remove methods are blocking, the contains method of the LazySkipList is wait-free, which can be seen because it uses no locks and never has to restart it's execution.
+
 \subsubsection*{Memory-Managed Version}
 In the standard implementations of the LazySkipList (and the LockFreeSkipList) the memory of nodes which are removed from the list is not deallocated. To fix this flaw, the MMLazySkipList uses \texttt{C++11} reference counted smart pointers to deallocate all removed nodes.
 
@@ -89,6 +93,9 @@ class AtomicMarkableReference
 
 \subsubsection*{Linearizability}
 \noindent As in the LazySkipList the linearization point for removing a list element is the moment when the marked flag is set to \texttt{true}. The linearization point for the insert operation is defined in the LockFreeSkipList as the moment the node is linked in at the bottom level.
+
+\subsubsection*{Progress Guarantees}
+
 
 %----------------------------------------------------------------------
 \section{Experimental Setup}
