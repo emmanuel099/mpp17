@@ -251,6 +251,7 @@ class LazySkipList final : public SkipList<T>
 
     void clear() override
     {
+        // TODO not linearizable?
         std::lock_guard<std::recursive_mutex> lock(m_head->mutex);
 
         // mark all nodes (expect of head and sentinel)

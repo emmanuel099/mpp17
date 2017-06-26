@@ -219,7 +219,7 @@ class LockFreeSkipList final : public SkipList<T>
 
     void clear() override
     {
-        // TODO not linearizable -> use locks?
+        // TODO not linearizable?
         bool marked = false;
 
         // mark all nodes (expect of head and sentinel)
@@ -263,7 +263,7 @@ class LockFreeSkipList final : public SkipList<T>
                     while (marked) {
                         if (!pred->next[level].compareAndSet(curr, succ, false,
                                                              false)) {
-                            goto retry; //?
+                            goto retry;
                         }
                         curr = pred->next[level].getReference();
                         succ = curr->next[level].get(marked);
