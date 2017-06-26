@@ -121,7 +121,7 @@ Saturn is a shared memory parallel computer with 48 AMD CPU cores.
 %------------------
 \subsection{Simulated Workloads}
 
-Various different workloads have been implemented to simulate different insert, remove and search uses. All the workloads support strong and weak scaling. By using strong scaling the number of items per thread will decrease when the number of threads is increased. By using weak scaling the number of items per thread will always be the same independent of the number of threads. Listing \ref{lst:itemsPerThread} shows the algorithm to determine the number of items used in each workload.
+Various different workloads have been implemented to simulate different insert, remove and search uses. All the workloads support strong and weak scaling. By using strong scaling the number of items per thread will decrease when the number of threads is increased. By using weak scaling the number of items per thread will always be the same independent of the number of threads. Listing \ref{lst:itemsPerThread} shows the algorithm to determine the number of items per thread used in each workload.
 
 \begin{lstlisting}[language=C++, caption={Items Per Thread depending on the Scaling Mode}, label=lst:itemsPerThread]
 static long itemsPerThread(const BaseBenchmarkConfiguration& config)
