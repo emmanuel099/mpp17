@@ -95,7 +95,8 @@ class AtomicMarkableReference
 \noindent As in the LazySkipList the linearization point for removing a list element is the moment when the marked flag is set to \texttt{true}. The linearization point for the insert operation is defined in the LockFreeSkipList as the moment the node is linked in at the bottom level.
 
 \subsubsection*{Progress Guarantees}
-
+The datastructure is lock-free because it is guaranteed that always some method call finishes in a finite number of steps: For the insert or remove operations, the only way this property is violated, if the compareAndSet methods fail, triggering a restart of the method. But this only happens if another process has successfully completed the compareAndSet method and thus made progress in its execution.\\
+As in the LazySkipList the contains method is wait-free.
 
 %----------------------------------------------------------------------
 \section{Experimental Setup}
