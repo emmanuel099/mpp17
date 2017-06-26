@@ -3,11 +3,11 @@
 %----------------------------------------------------------------------
 \section{Description / Strategy}
 
-A Skiplist is basically a collection of sorted list nodes, where each node has a link to one or more following nodes. These links form shortcuts which can be used to speed up the searching by skipping one or more nodes. In contrast to tree-based search structures Skiplists don't require re-balancing, thus making the concurrent implementation easier.
+A Skiplist is basically a collection of sorted list nodes, where each node has a link to one or more following nodes. These links form shortcuts which can be used to speed up the searching by skipping one or more nodes. In contrast to tree-based search structures Skiplists don't require re-balancing, thus making the concurrent implementation easier.\\
 
-%% TODO add more
+\noindent The links are arranged in multiple levels. Level $0$ is basically a linked-list of all inserted nodes sorted by value. The higher the level, the less nodes are interconnected meaning that the expected number of nodes on each level decreases exponentially. At the beginning and at the end of each level the \texttt{head} and \texttt{tail} sentinel nodes are placed. The \texttt{head} node is filled with the smallest and \texttt{tail} node with the biggest possible value. These sentinel nodes avoid some special cases in various Skiplist operations.\\
 
-
+\noindent Nodes can be found by starting at the maximum level and travel along the nodes of the current level as long as possible, thus exploiting the shortcut links. Whenever the value of the inspected node is bigger than the desired value, the level has to be decreased by one and the lookup can go on further.
 
 %----------------------------------------------------------------------
 \section{Implementation}
@@ -30,17 +30,16 @@ class SkipList
     virtual void clear() = 0;
 };
 \end{lstlisting}
-\noindent For simplicity all the implementations only support integral types and can only handle unique values, meaning that adding the same value twice will fail on the second time. Additionally each type must have a specified minimum and maximum value, because these values will be used by the \texttt{head} and \texttt{tail} nodes respectively. 
-
+\noindent For simplicity all the implementations only support integral types and can only handle unique values, meaning that adding the same value twice will fail on the second time. Additionally each type must have a specified minimum and maximum value, because these values will be used by the \texttt{head} and \texttt{tail} sentinel nodes respectively.
 
 
 %------------------
 \subsection{Sequential}
-The sequential Skiplist implements the algorithm described in TODO REF with two small optimizations. The current maximum level of all inserted nodes is cached so that the unused levels can be skipped immediately. Additionally the next-node pointers are stored in a static array within the node object itself, thus eliminating one indirection which would occur when using a dynamic datastructure such as \texttt{std::vector}, with the small downside that it always allocates \texttt{MaxHeight} next-pointer slots even if some slots are unused.
+The sequential Skiplist implements the algorithm described in \cite{Herlihy:2008:AMP:1734069} with two small optimizations. The current maximum level of all inserted nodes is cached so that the unused levels can be skipped immediately. Additionally the next-node pointers are stored in a static array within the node object itself, thus eliminating one indirection which would occur when using a dynamic datastructure such as \texttt{std::vector}, with the small downside that it always allocates \texttt{MaxHeight} next-pointer slots even if some slots are unused.
 
 %------------------
 \subsection{Concurrent}
-The ConcurrentSkiplist is based on the sequential one and uses a \texttt{std::mutex} to control the concurrent access of multiple threads. The implementation simply forwards all requests to the internal instance of a sequential Skiplist after successfully grabbing the lock, i.e. the access to the internal sequential list is serialized.
+The ConcurrentSkiplist is based on the sequential one and uses a \texttt{std::mutex} to control the concurrent access of multiple threads. The implementation simply forwards all requests to the internal instance of a sequential Skiplist after successfully grabbing the lock, thus serializing the access to the internal sequential Skiplist.
 
 %------------------
 \subsection{Lazy}
@@ -92,14 +91,72 @@ class AtomicMarkableReference
 %----------------------------------------------------------------------
 \section{Experimental Setup}
 
+\subsection{Saturn} \label{subsec:saturn}
+Saturn is a shared memory parallel computer with 48 AMD CPU cores.
+
+\begin{table}[H]
+  \label{tab:saturn} 
+  \caption{Hard- and software configuration of Saturn}
+  \begin{center}
+    \begin{tabular}{ll}
+      CPUs & 4 AMD Opteron 6168 (12 cores, 1.9 GHz, 12 MB cache)\\\hline
+      Main Memory & 128 GB DDR3-1333\\\hline
+      Operating system & Linux 64 bit (Debian Testing)\\\hline
+      Compiler & gcc (Debian 5.2.1-23) 5.2.1 20151028
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\noindent The hard- and software configuration of the test machine can be seen in table \ref{tab:saturn}. As compiler options we used \verb|-O3|. We enabled \verb|-DNDEBUG| and \verb|-DCOLLECT_STATISTICS| while performing the benchmarks.
+
 %------------------
 \subsection{Simulated Workloads}
 
+Various different workloads have been implemented to simulate different insert, remove and search uses. All the workloads support strong and weak scaling. By using strong scaling the number of items per thread will decrease when the number of threads is increased. By using weak scaling the number of items per thread will always be the same independent of the number of threads. Listing \ref{lst:itemsPerThread} shows the algorithm to determine the number of items used in each workload.
+
+\begin{lstlisting}[language=C++, caption={Items Per Thread depending on the Scaling Mode}, label=lst:itemsPerThread]
+static long itemsPerThread(const BaseBenchmarkConfiguration& config)
+{
+    switch (config.scalingMode) {
+    case Scaling::Weak:
+        return config.numberOfItems;
+    case Scaling::Strong:
+        return config.numberOfItems / config.numberOfThreads;
+    }
+}
+\end{lstlisting}
+
 \subsubsection{Interleaving Insert}
+
+The workload shown in Listing \ref{lst:interleaving_insert} simulates the insertion of interleaving values by multiple threads, causing that the predecessor and successor nodes of a node inserted by the current thread are always inserted by other threads. This benchmarks stresses the lazy and lock-free implementations by exploiting the \texttt{fullyLinked} property. 
+
+\begin{lstlisting}[language=C++, caption={Interleaving Insert Workload}, label=lst:interleaving_insert]
+const auto items = itemsPerThread(config);
+long number = config.initialNumberOfItems + threadId;
+for (long i = 0; i < items; i++) {
+    list.insert(number);
+    number += items;
+}
+\end{lstlisting}
+
 
 \subsubsection{Interleaving Remove}
 
+The list will be prefilled with \textit{ItemsPerThread} $*$ \textit{NumberOfThreads} items. The workload shown in Listing \ref{lst:interleaving_remove} simulates the removal of interleaving values by multiple threads, causing that the predecessor and successor nodes of a node removed by the current thread are always removed by other threads. This benchmarks stresses the lazy and lock-free implementations by exploiting the \texttt{marked} property. 
+
+\begin{lstlisting}[language=C++, caption={Interleaving Remove Workload}, label=lst:interleaving_remove]
+const auto items = itemsPerThread(config);
+long number = threadId;
+for (long i = 0; i < items; i++) {
+    list.remove(number);
+    number += items;
+}
+\end{lstlisting}
+
+
 \subsubsection{Mix of Insertions, Removals and Searches}
+
+This workload precomputes random numbers which are uniformly distributed between $0$ and \textit{ItemsPerThread} $*$ \textit{NumberOfThreads}. These random numbers will be passed on to the different Skiplist operations when invoking the work function. Each thread does either insert, remove or search for items. The number of inserting, removing and search threads can be varied when creating the workload.
 
 
 %------------------
@@ -113,7 +170,7 @@ To get a better picture about the performance and behavior of the Skiplist, perf
 %----------------------------------------------------------------------
 \section{Experimental Results}
 
-Each benchmark was repeated $30$ times. The execution time and Skiplist statistics of each repetition was collected and post-processed.
+Each benchmark was repeated $30$ times. Each benchmark started with an empty list and inserted and/or removed $1000000$ items. Strong scaling was used during benchmarking, thus the number of processed items didn't change with the number of threads. The maximum Skiplist height was $16$. The benchmarks were performed using $1$, $2$, $4$, $8$, $12$, $16$, $24$, $32$, $40$ and $48$ threads. The execution time and Skiplist statistics of each repetition was collected and post-processed.
 
 \subsection{Throughput}
 
@@ -142,7 +199,7 @@ Each benchmark was repeated $30$ times. The execution time and Skiplist statisti
         \label{fig:Scatter:OpenMPI:Abs:32}
     \end{subfigure}
     
-    \caption{SkipList throughput for different algorithms}
+    \caption{SkipList Throughput of Different Algorithms under Different Workloads}
 \end{figure}
 
 
@@ -173,5 +230,5 @@ Each benchmark was repeated $30$ times. The execution time and Skiplist statisti
         \label{fig:Scatter:OpenMPI:Abs:32}
     \end{subfigure}
     
-    \caption{Retries / Operation}
+    \caption{Retries / Operation of Different Algorithms under Different Workloads}
 \end{figure}
