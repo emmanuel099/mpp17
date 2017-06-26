@@ -45,7 +45,7 @@ The ConcurrentSkiplist is based on the sequential one and uses a \texttt{std::mu
 
 %------------------
 \subsection{Lazy}
-The LazySkipList was based on the algorithm discussed in \cite{}. Instead of serializing all accesses as in the ConcurrentSkipList, it uses a \texttt{std::mutex} per node to serialize as little as possible.
+The LazySkipList was based on the algorithm discussed in \cite{Herlihy:2008:AMP:1734069}. Instead of serializing all accesses as in the ConcurrentSkipList, it uses a \texttt{std::mutex} per node to serialize as little as possible.
 
 \subsubsection*{Linearizability}
 Additionally to the lock, each node contains two flags: \texttt{marked}, indicating that the node is virtually removed from the list and \texttt{fullyLinked}, which is set when the node is fully linked into the SkipList. These flags determine when a performed action (insert or remove) is visible to the other processes and therefore the moment when either the flag \texttt{marked} or \texttt{fullyLinked} is set to \texttt{true} is the linearization point of the respective method.
@@ -55,11 +55,11 @@ Due to order in which the processes obtain and release the locks, it can be show
 While the insert and remove methods are blocking, the contains method of the LazySkipList is wait-free, which can be seen because it uses no locks and never has to restart it's execution.
 
 \subsubsection*{Memory-Managed Version}
-In the standard implementations of the LazySkipList (and the LockFreeSkipList) the memory of nodes which are removed from the list is not deallocated. To fix this flaw, the MMLazySkipList uses \texttt{C++11} reference counted smart pointers to deallocate all removed nodes.
+In the standard implementations of the LazySkipList (and the LockFreeSkipList) the memory of nodes which are removed from the list is not deallocated. To fix this flaw, the MMLazySkipList uses \texttt{C++11} reference counted smart-pointers to deallocate all removed nodes.
 
 %------------------
 \subsection{Lock-Free}
-The LockFreeSkipList enables concurrent access without locks by using atomic \texttt{compareAndSet} operations for all list manipulations. Any list manipulations in the algorithm consists of changing the successor reference of a node while ensuring that the marked flag \textbf{and} the successor have not changed before. Because standard \texttt{compareAndSet} implementations only support to compare one value, we merge the reference and the marked flag into one \texttt{std::atomic\_uintptr\_t} by using one unused bit of the reference for our marked flag (See Listing \ref{lst:atomic_markable_reference}).
+The LockFreeSkipList \cite{Herlihy:2008:AMP:1734069} enables concurrent access without locks by using atomic \texttt{compareAndSet} operations for all list manipulations. Any list manipulations in the algorithm consists of changing the successor reference of a node while ensuring that the marked flag \textbf{and} the successor have not changed before. Because standard \texttt{compareAndSet} implementations only support to compare one value, we merge the reference and the marked flag into one \texttt{std::atomic\_uintptr\_t} by using one unused bit of the reference for our marked flag (See Listing \ref{lst:atomic_markable_reference}).
 
 \begin{lstlisting}[language=C++, caption={AtomicMarkableReference}, label=lst:atomic_markable_reference]
 template <typename T>
@@ -183,7 +183,7 @@ To get a better picture about the performance and behavior of the Skiplist, perf
 
 Each benchmark was repeated $30$ times and the error bars of each plot show the $95\%$ confidence interval. Each benchmark started with an empty list and inserted and/or removed $1000000$ items. Strong scaling was used during benchmarking, thus the number of processed items didn't change with the number of threads. The maximum Skiplist height was $16$. The benchmarks were performed using $1$, $2$, $4$, $8$, $12$, $16$, $24$, $32$, $40$ and $48$ threads. The execution time and Skiplist statistics of each repetition was collected and post-processed.
 
-\subsection{Throughput}
+\subsection{Throughput}\label{sec:throughput}
 
 \begin{figure}[H]
     \centering
@@ -263,4 +263,7 @@ Each benchmark was repeated $30$ times and the error bars of each plot show the 
 
 \subsection{Discussion}
 
+The plots in Section \ref{sec:throughput} show the achieved throughput dependent on the number of threads and the used workload. As expected the ConcurrentSkipList performs worse than the Lazy- and the LockFreeSkipList due the complete serialization of all executed operations, while the Lazy- and LockFreeSkipList perform similarly. Surprisingly the MMLazySkipList performs even worse than the ConcurrentSkipList in most scenarios, which is probably because of the higher than expected overhead of the atomic smart-pointer operations and the high number of retries.\\
 As seen in Section \ref{sec:perf_counter} the number of retries per operation increases with an ascending number of threads. This is expected because the more threads are used the more contention happens. \texttt{MMLazySkipList} performs much more retries than all the other implementations. We assume that the additional atomic smart-pointer overhead may be the reason, because more time elapses between the start of the operation (loop) and the validation of the nodes. So it's more likely that another thread causes an invalidation and thus a retry. \texttt{LockFreeSkipList} doesn't perform any retries during removal as seen in Figure \ref{fig:remove_retries_interleaving_remove_} and only a few during insert as seen in Figure \ref{fig:insert_retries_interleaving_insert_}, thus the relatively small number of retries in the mixed-workload benchmarks. Interesting is the particular high number of retries during insert of the \texttt{LazySkipList} in the mixed-workload benchmark when using $30$ threads as seen in Figures \ref{fig:insert_retries_mixed_workload_:1} and \ref{fig:insert_retries_mixed_workload_:2}. We haven't found a reason why this happened.
+
+
